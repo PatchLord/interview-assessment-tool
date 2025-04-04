@@ -74,8 +74,8 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                   <div className="flex gap-3 mt-1">
                     {candidate.selfAnalysis ? (
                       <>
-                        <Badge variant="outline">BE: {candidate.selfAnalysis.beScore}/10</Badge>
-                        <Badge variant="outline">FE: {candidate.selfAnalysis.feScore}/10</Badge>
+                        <Badge variant="outline">BE: {candidate.selfAnalysis?.beScore}/10</Badge>
+                        <Badge variant="outline">FE: {candidate.selfAnalysis?.feScore}/10</Badge>
                       </>
                     ) : (
                       <span className="text-gray-500">No self analysis data available</span>
