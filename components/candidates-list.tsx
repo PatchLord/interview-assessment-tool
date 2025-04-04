@@ -70,9 +70,9 @@ export default function CandidatesList({ candidates }: { candidates: Candidate[]
 
             <div className="mt-2">
               <p className="text-sm font-medium mb-1">Self Analysis:</p>
-              <div className="flex gap-3">
-                <Badge variant="outline">BE: {candidate.selfAnalysis.beScore}/10</Badge>
-                <Badge variant="outline">FE: {candidate.selfAnalysis.feScore}/10</Badge>
+              <div className="flex gap-2">
+                <Badge variant="outline">BE: {candidate.selfAnalysis?.beScore || "N/A"}/10</Badge>
+                <Badge variant="outline">FE: {candidate.selfAnalysis?.feScore || "N/A"}/10</Badge>
               </div>
             </div>
           </div>
