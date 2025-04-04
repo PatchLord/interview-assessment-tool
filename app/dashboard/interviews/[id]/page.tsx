@@ -18,7 +18,10 @@ async function getInterview(id: string) {
 
   try {
     const interview = await Interview.findById(id)
-      .populate("candidate")
+      .populate({
+        path: "candidate",
+        options: { lean: true }, // This ensures all fields including selfAnalysis are included
+      })
       .populate("interviewer", "-password");
 
     if (!interview) {

@@ -21,7 +21,7 @@ interface Interview {
     email: string;
     position: string;
     skills: string[];
-    selfAnalysis: {
+    selfAnalysis?: {
       beScore: number;
       feScore: number;
     };
@@ -240,10 +240,22 @@ export default function InterviewSession({
             </div>
             <div>
               <p className="text-sm font-medium">Self Analysis</p>
-              <p>
-                BE: {interview.candidate.selfAnalysis.beScore}, FE:{" "}
-                {interview.candidate.selfAnalysis.feScore}
-              </p>
+              <div className="flex gap-3 mt-1">
+                {interview.candidate.selfAnalysis ? (
+                  <>
+                    <Badge variant="outline">
+                      BE: {interview.candidate.selfAnalysis?.beScore}/10
+                    </Badge>
+                    <Badge variant="outline">
+                      FE: {interview.candidate.selfAnalysis?.feScore}/10
+                    </Badge>
+                  </>
+                ) : (
+                  <span className="text-gray-500">
+                    No self analysis data available
+                  </span>
+                )}
+              </div>
             </div>
             <div>
               <p className="text-sm font-medium">Skills</p>
