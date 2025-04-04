@@ -1,19 +1,22 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Eye, Calendar } from "lucide-react"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar, Eye } from "lucide-react";
+import Link from "next/link";
 
 interface Candidate {
-  _id: string
-  name: string
-  email: string
-  position: string
-  skills: string[]
-  selfAnalysis: string
-  interviewLevel: string
-  createdAt: string
+  _id: string;
+  name: string;
+  email: string;
+  position: string;
+  skills: string[];
+  selfAnalysis: {
+    beScore: number;
+    feScore: number;
+  };
+  interviewLevel: string;
+  createdAt: string;
 }
 
 export default function CandidatesList({ candidates }: { candidates: Candidate[] }) {
@@ -21,7 +24,9 @@ export default function CandidatesList({ candidates }: { candidates: Candidate[]
     <div className="space-y-4">
       {candidates.length > 0 ? (
         candidates.map((candidate) => (
-          <div key={candidate._id} className="p-4 border rounded-lg">
+          <div
+            key={candidate._id}
+            className="p-4 border rounded-lg">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div>
                 <h3 className="font-medium">{candidate.name}</h3>
@@ -40,7 +45,9 @@ export default function CandidatesList({ candidates }: { candidates: Candidate[]
                   {new Date(candidate.createdAt).toLocaleDateString()}
                 </div>
                 <Link href={`/dashboard/candidates/${candidate._id}`}>
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm">
                     <Eye className="h-4 w-4 mr-2" />
                     View Details
                   </Button>
@@ -52,7 +59,9 @@ export default function CandidatesList({ candidates }: { candidates: Candidate[]
               <p className="text-sm font-medium mb-1">Skills:</p>
               <div className="flex flex-wrap gap-2">
                 {candidate.skills.map((skill) => (
-                  <Badge key={skill} variant="secondary">
+                  <Badge
+                    key={skill}
+                    variant="secondary">
                     {skill}
                   </Badge>
                 ))}
@@ -61,7 +70,10 @@ export default function CandidatesList({ candidates }: { candidates: Candidate[]
 
             <div className="mt-2">
               <p className="text-sm font-medium mb-1">Self Analysis:</p>
-              <Badge variant="outline">{candidate.selfAnalysis}</Badge>
+              <div className="flex gap-3">
+                <Badge variant="outline">BE: {candidate.selfAnalysis.beScore}/10</Badge>
+                <Badge variant="outline">FE: {candidate.selfAnalysis.feScore}/10</Badge>
+              </div>
             </div>
           </div>
         ))
@@ -69,6 +81,5 @@ export default function CandidatesList({ candidates }: { candidates: Candidate[]
         <p className="text-gray-500">No candidates found</p>
       )}
     </div>
-  )
+  );
 }
-

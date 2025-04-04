@@ -71,7 +71,10 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                 </div>
                 <div>
                   <p className="text-sm font-medium">Self Analysis</p>
-                  <p>{candidate.selfAnalysis}</p>
+                  <div className="flex gap-3 mt-1">
+                    <Badge variant="outline">BE: {candidate.selfAnalysis.beScore}/10</Badge>
+                    <Badge variant="outline">FE: {candidate.selfAnalysis.feScore}/10</Badge>
+                  </div>
                 </div>
                 <div className="md:col-span-2">
                   <p className="text-sm font-medium">Skills</p>

@@ -1,23 +1,33 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useForm, Controller } from "react-hook-form"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/components/ui/use-toast"
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { useToast } from "@/components/ui/use-toast";
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 
 interface FormData {
-  name: string
-  email: string
-  position: "Intern" | "Full-Time"
-  skills: string[]
-  selfAnalysis: string
-  resumeUrl: string
-  interviewLevel: "High" | "Mid" | "Low"
+  name: string;
+  email: string;
+  position: "Intern" | "Full-Time";
+  skills: string[];
+  selfAnalysis: {
+    beScore: number;
+    feScore: number;
+  };
+  resumeUrl: string;
+  interviewLevel: "High" | "Mid" | "Low";
 }
 
 const SKILLS = [
@@ -33,19 +43,7 @@ const SKILLS = [
   "Tailwind",
   "React Native",
   "Nest.js",
-]
-
-const SELF_ANALYSIS_OPTIONS = [
-  "BE high, FE high",
-  "BE high, FE mid",
-  "BE high, FE low",
-  "BE mid, FE high",
-  "BE mid, FE mid",
-  "BE mid, FE low",
-  "BE low, FE high",
-  "BE low, FE mid",
-  "BE low, FE low",
-]
+];
 
 export default function AddCandidateForm({ onSuccess }: { onSuccess: () => void }) {
   const {
@@ -53,9 +51,16 @@ export default function AddCandidateForm({ onSuccess }: { onSuccess: () => void 
     handleSubmit,
     control,
     formState: { errors, isSubmitting },
-  } = useForm<FormData>()
-  const [selectedSkills, setSelectedSkills] = useState<string[]>([])
-  const { toast } = useToast()
+  } = useForm<FormData>({
+    defaultValues: {
+      selfAnalysis: {
+        beScore: 5,
+        feScore: 5,
+      },
+    },
+  });
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const { toast } = useToast();
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -68,40 +73,43 @@ export default function AddCandidateForm({ onSuccess }: { onSuccess: () => void 
           ...data,
           skills: selectedSkills,
         }),
-      })
-
+      });
       if (!response.ok) {
-        throw new Error("Failed to create candidate")
+        throw new Error("Failed to create candidate");
       }
-
       toast({
         title: "Success",
         description: "Candidate created successfully",
-      })
-
-      onSuccess()
+      });
+      onSuccess();
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to create candidate",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const toggleSkill = (skill: string) => {
-    setSelectedSkills((prev) => (prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill]))
-  }
+    setSelectedSkills((prev) =>
+      prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill]
+    );
+  };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="name">Name</Label>
-          <Input id="name" {...register("name", { required: "Name is required" })} />
+          <Input
+            id="name"
+            {...register("name", { required: "Name is required" })}
+          />
           {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
         </div>
-
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -127,13 +135,22 @@ export default function AddCandidateForm({ onSuccess }: { onSuccess: () => void 
           defaultValue="Full-Time"
           rules={{ required: "Position is required" }}
           render={({ field }) => (
-            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4">
+            <RadioGroup
+              onValueChange={field.onChange}
+              defaultValue={field.value}
+              className="flex space-x-4">
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="Full-Time" id="full-time" />
+                <RadioGroupItem
+                  value="Full-Time"
+                  id="full-time"
+                />
                 <Label htmlFor="full-time">Full-Time</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="Intern" id="intern" />
+                <RadioGroupItem
+                  value="Intern"
+                  id="intern"
+                />
                 <Label htmlFor="intern">Intern</Label>
               </div>
             </RadioGroup>
@@ -146,7 +163,9 @@ export default function AddCandidateForm({ onSuccess }: { onSuccess: () => void 
         <Label>Technical Skills</Label>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
           {SKILLS.map((skill) => (
-            <div key={skill} className="flex items-center space-x-2">
+            <div
+              key={skill}
+              className="flex items-center space-x-2">
               <Checkbox
                 id={`skill-${skill}`}
                 checked={selectedSkills.includes(skill)}
@@ -158,33 +177,81 @@ export default function AddCandidateForm({ onSuccess }: { onSuccess: () => void 
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="selfAnalysis">Self Analysis</Label>
-        <Controller
-          name="selfAnalysis"
-          control={control}
-          rules={{ required: "Self analysis is required" }}
-          render={({ field }) => (
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select self analysis" />
-              </SelectTrigger>
-              <SelectContent>
-                {SELF_ANALYSIS_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        />
-        {errors.selfAnalysis && <p className="text-sm text-red-500">{errors.selfAnalysis.message}</p>}
+      <div className="space-y-6">
+        <h3 className="text-lg font-medium">Self Analysis</h3>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <Label htmlFor="beScore">Backend Score (1-10)</Label>
+              <Controller
+                name="selfAnalysis.beScore"
+                control={control}
+                rules={{ required: "Backend score is required" }}
+                render={({ field }) => <span className="font-medium">{field.value}</span>}
+              />
+            </div>
+            <Controller
+              name="selfAnalysis.beScore"
+              control={control}
+              rules={{ required: "Backend score is required" }}
+              render={({ field }) => (
+                <Slider
+                  id="beScore"
+                  min={1}
+                  max={10}
+                  step={1}
+                  defaultValue={[field.value]}
+                  onValueChange={(values) => field.onChange(values[0])}
+                  className="w-full"
+                />
+              )}
+            />
+            {errors.selfAnalysis?.beScore && (
+              <p className="text-sm text-red-500">{errors.selfAnalysis.beScore.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <Label htmlFor="feScore">Frontend Score (1-10)</Label>
+              <Controller
+                name="selfAnalysis.feScore"
+                control={control}
+                rules={{ required: "Frontend score is required" }}
+                render={({ field }) => <span className="font-medium">{field.value}</span>}
+              />
+            </div>
+            <Controller
+              name="selfAnalysis.feScore"
+              control={control}
+              rules={{ required: "Frontend score is required" }}
+              render={({ field }) => (
+                <Slider
+                  id="feScore"
+                  min={1}
+                  max={10}
+                  step={1}
+                  defaultValue={[field.value]}
+                  onValueChange={(values) => field.onChange(values[0])}
+                  className="w-full"
+                />
+              )}
+            />
+            {errors.selfAnalysis?.feScore && (
+              <p className="text-sm text-red-500">{errors.selfAnalysis.feScore.message}</p>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="resumeUrl">Resume URL</Label>
-        <Input id="resumeUrl" {...register("resumeUrl")} placeholder="https://example.com/resume.pdf" />
+        <Input
+          id="resumeUrl"
+          {...register("resumeUrl")}
+          placeholder="https://example.com/resume.pdf"
+        />
       </div>
 
       <div className="space-y-2">
@@ -194,7 +261,9 @@ export default function AddCandidateForm({ onSuccess }: { onSuccess: () => void 
           control={control}
           rules={{ required: "Interview level is required" }}
           render={({ field }) => (
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select
+              onValueChange={field.onChange}
+              defaultValue={field.value}>
               <SelectTrigger>
                 <SelectValue placeholder="Select interview level" />
               </SelectTrigger>
@@ -206,18 +275,24 @@ export default function AddCandidateForm({ onSuccess }: { onSuccess: () => void 
             </Select>
           )}
         />
-        {errors.interviewLevel && <p className="text-sm text-red-500">{errors.interviewLevel.message}</p>}
+        {errors.interviewLevel && (
+          <p className="text-sm text-red-500">{errors.interviewLevel.message}</p>
+        )}
       </div>
 
       <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline" onClick={onSuccess}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onSuccess}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button
+          type="submit"
+          disabled={isSubmitting}>
           {isSubmitting ? "Creating..." : "Create Candidate"}
         </Button>
       </div>
     </form>
-  )
+  );
 }
-

@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose"
+import mongoose, { Schema } from "mongoose";
 
 const CandidateSchema = new Schema({
   name: { type: String, required: true },
@@ -6,23 +6,12 @@ const CandidateSchema = new Schema({
   position: { type: String, enum: ["Intern", "Full-Time"], required: true },
   skills: [{ type: String }],
   selfAnalysis: {
-    type: String,
-    enum: [
-      "BE high, FE high",
-      "BE high, FE mid",
-      "BE high, FE low",
-      "BE mid, FE high",
-      "BE mid, FE mid",
-      "BE mid, FE low",
-      "BE low, FE high",
-      "BE low, FE mid",
-      "BE low, FE low",
-    ],
+    beScore: { type: Number, min: 1, max: 10, required: true },
+    feScore: { type: Number, min: 1, max: 10, required: true },
   },
   resumeUrl: { type: String },
   interviewLevel: { type: String, enum: ["High", "Mid", "Low"], required: true },
   createdAt: { type: Date, default: Date.now },
-})
+});
 
-export default mongoose.models.Candidate || mongoose.model("Candidate", CandidateSchema)
-
+export default mongoose.models.Candidate || mongoose.model("Candidate", CandidateSchema);
