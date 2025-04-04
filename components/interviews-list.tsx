@@ -1,27 +1,27 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Eye, Calendar, User } from "lucide-react"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar, Eye, User } from "lucide-react";
+import Link from "next/link";
 
 interface Interview {
-  _id: string
+  _id: string;
   candidate: {
-    _id: string
-    name: string
-    position: string
-    interviewLevel: string
-  }
+    _id: string;
+    name: string;
+    position: string;
+    interviewLevel: string;
+  };
   interviewer: {
-    _id: string
-    name: string
-  }
-  date: string
-  status: "in-progress" | "completed"
+    _id: string;
+    name: string;
+  };
+  date: string;
+  status: "in-progress" | "completed";
   finalAssessment?: {
-    overallScore: number
-  }
+    overallScore: number;
+  };
 }
 
 export default function InterviewsList({ interviews }: { interviews: Interview[] }) {
@@ -29,19 +29,22 @@ export default function InterviewsList({ interviews }: { interviews: Interview[]
     <div className="space-y-4">
       {interviews.length > 0 ? (
         interviews.map((interview) => (
-          <div key={interview._id} className="p-4 border rounded-lg">
+          <div
+            key={interview._id}
+            className="p-4 border rounded-lg">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div>
                 <h3 className="font-medium">{interview.candidate.name}</h3>
                 <div className="flex items-center space-x-2 mt-1">
-                  <Badge variant={interview.candidate.position === "Intern" ? "secondary" : "default"}>
+                  <Badge
+                    variant={interview.candidate.position === "Intern" ? "secondary" : "default"}>
                     {interview.candidate.position}
                   </Badge>
                   <Badge variant="outline">{interview.candidate.interviewLevel} Level</Badge>
                 </div>
                 <div className="flex items-center text-sm text-gray-500 mt-1">
                   <User className="h-4 w-4 mr-1" />
-                  Interviewer: {interview.interviewer.name}
+                  Interviewer: {interview.interviewer?.name || "N/A"}
                 </div>
               </div>
 
@@ -55,7 +58,9 @@ export default function InterviewsList({ interviews }: { interviews: Interview[]
                     {interview.status === "completed" ? "Completed" : "In Progress"}
                   </Badge>
                   {interview.status === "completed" && interview.finalAssessment && (
-                    <Badge variant="outline">Score: {interview.finalAssessment.overallScore}/10</Badge>
+                    <Badge variant="outline">
+                      Score: {interview.finalAssessment.overallScore}/10
+                    </Badge>
                   )}
                 </div>
               </div>
@@ -63,7 +68,9 @@ export default function InterviewsList({ interviews }: { interviews: Interview[]
 
             <div className="mt-4 flex justify-end">
               <Link href={`/dashboard/interviews/${interview._id}`}>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm">
                   <Eye className="h-4 w-4 mr-2" />
                   {interview.status === "in-progress" ? "Continue Interview" : "View Details"}
                 </Button>
@@ -75,6 +82,5 @@ export default function InterviewsList({ interviews }: { interviews: Interview[]
         <p className="text-gray-500">No interviews found</p>
       )}
     </div>
-  )
+  );
 }
-
