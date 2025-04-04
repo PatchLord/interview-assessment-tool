@@ -193,17 +193,24 @@ export default function InterviewSession({
         <div>
           <h1 className="text-3xl font-bold">Interview Session</h1>
           <div className="flex items-center space-x-2 mt-2">
-            <Badge variant={interview.status === "completed" ? "success" : "secondary"}>
+            <Badge
+              variant={
+                interview.status === "completed" ? "success" : "secondary"
+              }
+            >
               {interview.status === "completed" ? "Completed" : "In Progress"}
             </Badge>
-            <span className="text-gray-500">{new Date(interview.date).toLocaleDateString()}</span>
+            <span className="text-gray-500">
+              {new Date(interview.date).toLocaleDateString()}
+            </span>
           </div>
         </div>
 
         {interview.status === "in-progress" && (
           <Button
             onClick={() => setActiveTab("final-assessment")}
-            className="mt-4 md:mt-0">
+            className="mt-4 md:mt-0"
+          >
             Complete Interview
           </Button>
         )}
@@ -244,7 +251,9 @@ export default function InterviewSession({
                     </Badge>
                   </>
                 ) : (
-                  <span className="text-gray-500">No self analysis data available</span>
+                  <span className="text-gray-500">
+                    No self analysis data available
+                  </span>
                 )}
               </div>
             </div>
@@ -252,30 +261,33 @@ export default function InterviewSession({
               <p className="text-sm font-medium">Skills</p>
               <div className="flex flex-wrap gap-2 mt-1">
                 {interview.candidate.skills?.map((skill) => (
-                  <Badge
-                    key={skill}
-                    variant="outline">
+                  <Badge key={skill} variant="outline">
                     {skill}
                   </Badge>
-                )) || <span className="text-gray-500">No skills specified</span>}
+                )) || (
+                  <span className="text-gray-500">No skills specified</span>
+                )}
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-4">
           <TabsTrigger
             value="question-generator"
-            disabled={interview.status === "completed"}>
+            disabled={interview.status === "completed"}
+          >
             Question Generator
           </TabsTrigger>
           <TabsTrigger
             value="code-editor"
-            disabled={interview.questions.length === 0 || interview.status === "completed"}>
+            disabled={
+              interview.questions.length === 0 ||
+              interview.status === "completed"
+            }
+          >
             Code Editor
           </TabsTrigger>
           <TabsTrigger
@@ -284,7 +296,8 @@ export default function InterviewSession({
               interview.questions.length === 0 ||
               !interview.questions[activeQuestionIndex]?.candidateCode ||
               interview.status === "completed"
-            }>
+            }
+          >
             AI Evaluation
           </TabsTrigger>
           <TabsTrigger value="final-assessment">Final Assessment</TabsTrigger>
