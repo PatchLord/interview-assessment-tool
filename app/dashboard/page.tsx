@@ -1,25 +1,25 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CalendarIcon, UserIcon, FileTextIcon, CheckCircleIcon } from "lucide-react"
-import connectToDatabase from "@/lib/mongodb"
-import Interview from "@/lib/models/interview"
-import Candidate from "@/lib/models/candidate"
-import User from "@/lib/models/user"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { authOptions } from "@/lib/auth";
+import Candidate from "@/lib/models/candidate";
+import Interview from "@/lib/models/interview";
+import User from "@/lib/models/user";
+import connectToDatabase from "@/lib/mongodb";
+import { CalendarIcon, CheckCircleIcon, FileTextIcon, UserIcon } from "lucide-react";
+import { getServerSession } from "next-auth";
 
 async function getStats() {
-  await connectToDatabase()
+  await connectToDatabase();
 
-  const totalInterviews = await Interview.countDocuments()
-  const completedInterviews = await Interview.countDocuments({ status: "completed" })
-  const totalCandidates = await Candidate.countDocuments()
-  const totalInterviewers = await User.countDocuments({ role: "interviewer" })
+  const totalInterviews = await Interview.countDocuments();
+  const completedInterviews = await Interview.countDocuments({ status: "completed" });
+  const totalCandidates = await Candidate.countDocuments();
+  const totalInterviewers = await User.countDocuments({ role: "interviewer" });
 
   const recentInterviews = await Interview.find()
     .populate("candidate")
     .populate("interviewer", "-password")
     .sort({ date: -1 })
-    .limit(5)
+    .limit(5);
 
   return {
     totalInterviews,
@@ -27,15 +27,20 @@ async function getStats() {
     totalCandidates,
     totalInterviewers,
     recentInterviews,
-  }
+  };
 }
 
 export default async function DashboardPage() {
-  const session = await getServerSession(authOptions)
-  const { totalInterviews, completedInterviews, totalCandidates, totalInterviewers, recentInterviews } =
-    await getStats()
+  const session = await getServerSession(authOptions);
+  const {
+    totalInterviews,
+    completedInterviews,
+    totalCandidates,
+    totalInterviewers,
+    recentInterviews,
+  } = await getStats();
 
-  const isAdmin = session?.user?.role === "admin"
+  const isAdmin = session?.user?.role === "admin";
 
   return (
     <div className="space-y-6">
@@ -98,11 +103,18 @@ export default async function DashboardPage() {
           <div className="space-y-4">
             {recentInterviews.length > 0 ? (
               recentInterviews.map((interview) => (
-                <div key={interview._id} className="flex items-center justify-between border-b pb-4">
+                <div
+                  key={interview._id}
+                  className="flex items-center justify-between border-b pb-4">
                   <div>
-                    <p className="font-medium">{interview.candidate.name}</p>
+                    <p className="font-medium">
+                      {interview.candidate?.name || "Unknown Candidate"}
+                    </p>
                     <p className="text-sm text-gray-500">
-                      Interviewed by {interview.interviewer.name} on {new Date(interview.date).toLocaleDateString()}
+                      Interviewed by {interview.interviewer?.name || "Unknown Interviewer"} on{" "}
+                      {interview.date
+                        ? new Date(interview.date).toLocaleDateString()
+                        : "Unknown date"}
                     </p>
                   </div>
                   <div
@@ -110,8 +122,7 @@ export default async function DashboardPage() {
                       interview.status === "completed"
                         ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                         : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                    }`}
-                  >
+                    }`}>
                     {interview.status === "completed" ? "Completed" : "In Progress"}
                   </div>
                 </div>
@@ -123,6 +134,5 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
-
