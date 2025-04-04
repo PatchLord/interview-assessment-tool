@@ -4,7 +4,7 @@ import Candidate from "@/lib/models/candidate";
 import Interview from "@/lib/models/interview";
 import connectToDatabase from "@/lib/mongodb";
 import { getServerSession } from "next-auth";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 
 // Helper functions remain unchanged
 async function getInterview(id: string) {
@@ -108,11 +108,33 @@ async function renderInterviewContent(id: string, candidateId?: string) {
   const interview = await getInterview(id);
 
   if (!interview) {
-    notFound();
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh]">
+        <h1 className="text-3xl font-bold mb-4">Interview Not Found</h1>
+        <p className="text-gray-600 mb-6">
+          The interview you're looking for doesn't exist or has been removed.
+        </p>
+        <a
+          href="/dashboard/interviews"
+          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90">
+          Return to Interviews
+        </a>
+      </div>
+    );
   }
 
-  if (session.user.role !== "admin" && interview.interviewer._id !== session.user.id) {
-    notFound();
+  if (session.user.role !== "admin" && interview?.interviewer?._id !== session.user.id) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh]">
+        <h1 className="text-3xl font-bold mb-4">Access Denied</h1>
+        <p className="text-gray-600 mb-6">You don't have permission to view this interview.</p>
+        <a
+          href="/dashboard/interviews"
+          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90">
+          Return to Interviews
+        </a>
+      </div>
+    );
   }
 
   return <InterviewSession interview={interview} />;

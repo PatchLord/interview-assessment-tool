@@ -72,8 +72,14 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                 <div>
                   <p className="text-sm font-medium">Self Analysis</p>
                   <div className="flex gap-3 mt-1">
-                    <Badge variant="outline">BE: {candidate.selfAnalysis.beScore}/10</Badge>
-                    <Badge variant="outline">FE: {candidate.selfAnalysis.feScore}/10</Badge>
+                    {candidate.selfAnalysis ? (
+                      <>
+                        <Badge variant="outline">BE: {candidate.selfAnalysis.beScore}/10</Badge>
+                        <Badge variant="outline">FE: {candidate.selfAnalysis.feScore}/10</Badge>
+                      </>
+                    ) : (
+                      <span className="text-gray-500">No self analysis data available</span>
+                    )}
                   </div>
                 </div>
                 <div className="md:col-span-2">
@@ -123,7 +129,7 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                             Interviewed on {new Date(interview.date).toLocaleDateString()}
                           </p>
                           <p className="text-sm text-gray-500">
-                            Interviewer: {interview.interviewer.name}
+                            Interviewer: {interview.interviewer?.name || "N/A"}
                           </p>
                         </div>
 

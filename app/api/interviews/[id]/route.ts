@@ -26,7 +26,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 
     // Check if user is admin or the interviewer
-    if (session.user.role !== "admin" && interview.interviewer._id.toString() !== session.user.id) {
+    if (
+      session.user.role !== "admin" &&
+      interview.interviewer?._id.toString() !== session.user.id
+    ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
