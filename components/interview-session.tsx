@@ -14,6 +14,7 @@ import QuestionGenerator from "./question-generator";
 
 interface Interview {
   _id: string;
+  date: string | Date;
   candidate: {
     _id: string;
     name: string;

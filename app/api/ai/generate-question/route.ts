@@ -10,7 +10,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { skills, difficulty, level } = await request.json();
+    const { skills, difficulty, level, format } = await request.json();
     if (!skills || !difficulty || !level) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
@@ -27,7 +27,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const question = await generateQuestion(skills, difficulty, level);
+    // Pass the format parameter to the generateQuestion function
+    const question = await generateQuestion(skills, difficulty, level, format || "text");
     return NextResponse.json({ question });
   } catch (error) {
     console.error("Error in generate-question route:", error);

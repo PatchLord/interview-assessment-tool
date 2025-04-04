@@ -1,26 +1,31 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Question {
-  skill: string
-  difficulty: string
-  question: string
-  candidateCode?: string
-  interviewerNotes?: string
+  skill: string;
+  difficulty: string;
+  question: string;
+  candidateCode?: string;
+  interviewerNotes?: string;
 }
 
 interface CodeEditorProps {
-  questions: Question[]
-  activeQuestionIndex: number
-  setActiveQuestionIndex: (index: number) => void
-  onUpdateQuestion: (index: number, data: { candidateCode?: string; interviewerNotes?: string }) => void
+  questions: Question[];
+  activeQuestionIndex: number;
+  setActiveQuestionIndex: (index: number) => void;
+  onUpdateQuestion: (
+    index: number,
+    data: { candidateCode?: string; interviewerNotes?: string }
+  ) => void;
 }
 
 export default function CodeEditor({
@@ -29,34 +34,36 @@ export default function CodeEditor({
   setActiveQuestionIndex,
   onUpdateQuestion,
 }: CodeEditorProps) {
-  const [code, setCode] = useState<string>(questions[activeQuestionIndex]?.candidateCode || "")
-  const [notes, setNotes] = useState<string>(questions[activeQuestionIndex]?.interviewerNotes || "")
+  const [code, setCode] = useState<string>(questions[activeQuestionIndex]?.candidateCode || "");
+  const [notes, setNotes] = useState<string>(
+    questions[activeQuestionIndex]?.interviewerNotes || ""
+  );
 
   // Update local state when active question changes
   useEffect(() => {
-    setCode(questions[activeQuestionIndex]?.candidateCode || "")
-    setNotes(questions[activeQuestionIndex]?.interviewerNotes || "")
-  }, [activeQuestionIndex, questions])
+    setCode(questions[activeQuestionIndex]?.candidateCode || "");
+    setNotes(questions[activeQuestionIndex]?.interviewerNotes || "");
+  }, [activeQuestionIndex, questions]);
 
   const handleSaveCode = () => {
-    onUpdateQuestion(activeQuestionIndex, { candidateCode: code })
-  }
+    onUpdateQuestion(activeQuestionIndex, { candidateCode: code });
+  };
 
   const handleSaveNotes = () => {
-    onUpdateQuestion(activeQuestionIndex, { interviewerNotes: notes })
-  }
+    onUpdateQuestion(activeQuestionIndex, { interviewerNotes: notes });
+  };
 
   const handlePreviousQuestion = () => {
     if (activeQuestionIndex > 0) {
-      setActiveQuestionIndex(activeQuestionIndex - 1)
+      setActiveQuestionIndex(activeQuestionIndex - 1);
     }
-  }
+  };
 
   const handleNextQuestion = () => {
     if (activeQuestionIndex < questions.length - 1) {
-      setActiveQuestionIndex(activeQuestionIndex + 1)
+      setActiveQuestionIndex(activeQuestionIndex + 1);
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -73,7 +80,11 @@ export default function CodeEditor({
         <CardContent>
           {questions.length > 1 && (
             <div className="flex items-center justify-between mb-4">
-              <Button variant="outline" size="sm" onClick={handlePreviousQuestion} disabled={activeQuestionIndex === 0}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePreviousQuestion}
+                disabled={activeQuestionIndex === 0}>
                 <ChevronLeft className="h-4 w-4 mr-2" />
                 Previous Question
               </Button>
@@ -84,8 +95,7 @@ export default function CodeEditor({
                 variant="outline"
                 size="sm"
                 onClick={handleNextQuestion}
-                disabled={activeQuestionIndex === questions.length - 1}
-              >
+                disabled={activeQuestionIndex === questions.length - 1}>
                 Next Question
                 <ChevronRight className="h-4 w-4 ml-2" />
               </Button>
@@ -99,30 +109,112 @@ export default function CodeEditor({
               <TabsTrigger value="notes">Notes</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="question" className="space-y-4">
-              <div className="p-4 border rounded-md whitespace-pre-wrap">{questions[activeQuestionIndex].question}</div>
+            <TabsContent
+              value="question"
+              className="space-y-4">
+              <div className="p-4 border rounded-md bg-slate-50 dark:bg-slate-900 overflow-y-auto">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    p: ({ node, ...props }) => (
+                      <p
+                        className="mb-4"
+                        {...props}
+                      />
+                    ),
+                    h1: ({ node, ...props }) => (
+                      <h1
+                        className="text-2xl font-bold mb-4"
+                        {...props}
+                      />
+                    ),
+                    h2: ({ node, ...props }) => (
+                      <h2
+                        className="text-xl font-bold mb-3"
+                        {...props}
+                      />
+                    ),
+                    h3: ({ node, ...props }) => (
+                      <h3
+                        className="text-lg font-bold mb-2"
+                        {...props}
+                      />
+                    ),
+                    pre: ({ node, ...props }) => (
+                      <pre
+                        className="bg-gray-800 text-white p-4 rounded-md my-4 overflow-auto"
+                        {...props}
+                      />
+                    ),
+                    code: ({
+                      node,
+                      inline,
+                      ...props
+                    }: {
+                      node?: any;
+                      inline?: boolean;
+                      [key: string]: any;
+                    }) =>
+                      inline ? (
+                        <code
+                          className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded"
+                          {...props}
+                        />
+                      ) : (
+                        <code {...props} />
+                      ),
+                    ul: ({ node, ...props }) => (
+                      <ul
+                        className="list-disc pl-6 mb-4"
+                        {...props}
+                      />
+                    ),
+                    ol: ({ node, ...props }) => (
+                      <ol
+                        className="list-decimal pl-6 mb-4"
+                        {...props}
+                      />
+                    ),
+                    li: ({ node, ...props }) => (
+                      <li
+                        className="mb-1"
+                        {...props}
+                      />
+                    ),
+                  }}>
+                  {questions[activeQuestionIndex].question}
+                </ReactMarkdown>
+              </div>
             </TabsContent>
 
-            <TabsContent value="code" className="space-y-4">
+            <TabsContent
+              value="code"
+              className="space-y-4">
               <Textarea
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 className="min-h-[300px] font-mono"
                 placeholder="Write or paste candidate's code here..."
               />
-              <Button onClick={handleSaveCode} className="w-full">
+              <Button
+                onClick={handleSaveCode}
+                className="w-full">
                 Save Code
               </Button>
             </TabsContent>
 
-            <TabsContent value="notes" className="space-y-4">
+            <TabsContent
+              value="notes"
+              className="space-y-4">
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="min-h-[200px]"
                 placeholder="Add your notes about the candidate's approach and communication..."
               />
-              <Button onClick={handleSaveNotes} className="w-full">
+              <Button
+                onClick={handleSaveNotes}
+                className="w-full">
                 Save Notes
               </Button>
             </TabsContent>
@@ -130,6 +222,5 @@ export default function CodeEditor({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
-
