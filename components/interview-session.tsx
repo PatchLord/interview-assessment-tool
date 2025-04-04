@@ -233,11 +233,20 @@ export default function InterviewSession({
             </div>
             <div>
               <p className="text-sm font-medium">Self Analysis</p>
-              <p>
-                {interview.candidate.selfAnalysis
-                  ? `BE Score: ${interview.candidate.selfAnalysis.beScore}, FE Score: ${interview.candidate.selfAnalysis.feScore}`
-                  : "No self analysis provided"}
-              </p>
+              <div className="flex gap-3 mt-1">
+                {interview.candidate.selfAnalysis ? (
+                  <>
+                    <Badge variant="outline">
+                      BE: {interview.candidate.selfAnalysis?.beScore}/10
+                    </Badge>
+                    <Badge variant="outline">
+                      FE: {interview.candidate.selfAnalysis?.feScore}/10
+                    </Badge>
+                  </>
+                ) : (
+                  <span className="text-gray-500">No self analysis data available</span>
+                )}
+              </div>
             </div>
             <div>
               <p className="text-sm font-medium">Skills</p>
