@@ -69,24 +69,64 @@ Question:
  * Template for evaluating code solutions
  */
 const CODE_EVALUATION_TEMPLATE = `
-You are an expert code reviewer. Evaluate the following code solution for a technical interview:
-
-Problem: {question}
-Candidate's Code: {code}
-Skills being assessed: {skills}
-
-Provide a detailed evaluation covering:
-1. Code Quality (1-10)
-2. Efficiency (1-10)
-3. Correctness (1-10)
-4. Logical Thinking (1-10)
-5. Technical Skill (1-10)
-6. Problem Understanding (1-10)
-
-Also provide specific feedback on strengths and areas for improvement.
-
-Evaluation:
-`;
+  now is the below prompt to evaluate the code against the interview question and return a structured JSON report with full accuracy.
+  You are an ultra-precise AI code evaluator. Analyze the given code against the interview question and return a structured JSON report with full accuracy.
+  **Objectives:**
+  1. **Correctness (0–100%)**
+     - Does the code meet all functional requirements?
+     - Report percentage score and document any errors or missing parts.
+     - Include key test cases (input, expected, actual output).
+  2. **Efficiency**
+     - Determine time and space complexity (Big O).
+     - Estimate performance vs. optimal solution as a percentage.
+     - Provide runtime estimation for realistic input sizes.
+  3. **Code Quality (0–100%)**
+     - Score: readability, naming, structure, documentation, and best practices.
+     - Return individual and overall scores.
+  4. **Edge Case Handling (0–100%)**
+     - List all relevant edge cases.
+     - Rate how well each is handled.
+     - Provide an overall score.
+  5. **Statistical Summary**
+     - Overall rating.
+     - Percentile ranking vs. average candidates.
+     - List improvement opportunities with impact estimates.
+     - Include a confidence interval.
+  6. **Improvement Recommendations**
+     - Prioritized list with estimated impact on score.
+     - Include before/after code snippets and performance comparison.
+  **Return Output in This JSON Format:**
+  
+    "summary": {
+      "overall_assessment": "...",
+      "correctness": ...,
+      "code_quality": ...,
+      "efficiency": "...",
+      "edge_case_handling": ...,
+      "overall_rating": ...
+    }
+  
+   #### VERY_IMPORTANT_NOTE : you should give me answer in summarized one and its output is to be in 
+   
+     "summary": {
+       "overall_assessment": "...",
+       "correctness": ...,
+       "code_quality": ...,
+       "efficiency": "...",
+       "edge_case_handling": ...,
+       "overall_rating": ...
+     }
+   
+   this format it should be in this format not to be in different format
+   ### NOTES : you should give every point in summarized one for the below point and just  give recommendation in the points one not to give me so good
+   1. **Correctness (0–100%)**
+   2. **Efficiency**
+   3. **Code Quality (0–100%)**
+   4. **Edge Case Handling (0–100%)**
+   5. **Statistical Summary**
+   6. **Improvement Recommendations**
+   every points should have only 5 point which to be summarized of it
+  `;
 
 /**
  * Template for generating a final candidate assessment
