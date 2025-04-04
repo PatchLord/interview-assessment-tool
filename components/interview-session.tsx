@@ -1,75 +1,83 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/components/ui/use-toast"
-import QuestionGenerator from "./question-generator"
-import CodeEditor from "./code-editor"
-import AIEvaluation from "./ai-evaluation"
-import FinalAssessment from "./final-assessment"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import AIEvaluation from "./ai-evaluation";
+import CodeEditor from "./code-editor";
+import FinalAssessment from "./final-assessment";
+import QuestionGenerator from "./question-generator";
 
 interface Interview {
-  _id: string
+  _id: string;
   candidate: {
-    _id: string
-    name: string
-    email: string
-    position: string
-    skills: string[]
-    selfAnalysis: string
-    interviewLevel: string
-  }
+    _id: string;
+    name: string;
+    email: string;
+    position: string;
+    skills: string[];
+    selfAnalysis: string;
+    interviewLevel: string;
+  };
   interviewer: {
-    _id: string
-    name: string
-  }
+    _id: string;
+    name: string;
+  };
   questions: Array<{
-    skill: string
-    difficulty: string
-    question: string
-    candidateCode?: string
+    skill: string;
+    difficulty: string;
+    question: string;
+    candidateCode?: string;
     aiEvaluation?: {
-      codeQuality: number
-      efficiency: number
-      correctness: number
-      logicalThinking: number
-      technicalSkill: number
-      problemUnderstanding: number
-      feedback: string
-    }
-    interviewerNotes?: string
-  }>
-  status: "in-progress" | "completed"
+      codeQuality: number;
+      efficiency: number;
+      correctness: number;
+      logicalThinking: number;
+      technicalSkill: number;
+      problemUnderstanding: number;
+      feedback: string;
+    };
+    interviewerNotes?: string;
+  }>;
+  status: "in-progress" | "completed";
   finalAssessment?: {
-    technicalProficiency: number
-    problemSolving: number
-    codeQuality: number
-    overallScore: number
-    strengths: string[]
-    areasForImprovement: string[]
-    comments: string
-  }
+    technicalProficiency: number;
+    problemSolving: number;
+    codeQuality: number;
+    overallScore: number;
+    strengths: string[];
+    areasForImprovement: string[];
+    comments: string;
+  };
 }
 
-export default function InterviewSession({ interview: initialInterview }: { interview: Interview }) {
-  const [interview, setInterview] = useState<Interview>(initialInterview)
-  const [activeQuestionIndex, setActiveQuestionIndex] = useState<number>(0)
-  const [activeTab, setActiveTab] = useState<string>("question-generator")
-  const router = useRouter()
-  const { toast } = useToast()
+export default function InterviewSession({
+  interview: initialInterview,
+}: {
+  interview: Interview;
+}) {
+  const [interview, setInterview] = useState<Interview>(initialInterview);
+  const [activeQuestionIndex, setActiveQuestionIndex] = useState<number>(0);
+  const [activeTab, setActiveTab] = useState<string>("question-generator");
+  const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     // If interview is completed, show the final assessment tab
     if (interview.status === "completed") {
-      setActiveTab("final-assessment")
+      setActiveTab("final-assessment");
     }
-  }, [interview.status])
+  }, [interview.status]);
 
-  const handleAddQuestion = async (question: { skill: string; difficulty: string; question: string }) => {
+  const handleAddQuestion = async (question: {
+    skill: string;
+    difficulty: string;
+    question: string;
+  }) => {
     try {
       const response = await fetch(`/api/interviews/${interview._id}`, {
         method: "PATCH",
@@ -80,29 +88,29 @@ export default function InterviewSession({ interview: initialInterview }: { inte
           action: "addQuestion",
           data: question,
         }),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error("Failed to add question")
+        throw new Error("Failed to add question");
       }
 
-      const updatedInterview = await response.json()
-      setInterview(updatedInterview)
-      setActiveQuestionIndex(updatedInterview.questions.length - 1)
-      setActiveTab("code-editor")
+      const updatedInterview = await response.json();
+      setInterview(updatedInterview);
+      setActiveQuestionIndex(updatedInterview.questions.length - 1);
+      setActiveTab("code-editor");
 
       toast({
         title: "Success",
         description: "Question added successfully",
-      })
+      });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to add question",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleUpdateQuestion = async (questionIndex: number, data: any) => {
     try {
@@ -118,27 +126,27 @@ export default function InterviewSession({ interview: initialInterview }: { inte
             ...data,
           },
         }),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error("Failed to update question")
+        throw new Error("Failed to update question");
       }
 
-      const updatedInterview = await response.json()
-      setInterview(updatedInterview)
+      const updatedInterview = await response.json();
+      setInterview(updatedInterview);
 
       toast({
         title: "Success",
         description: "Question updated successfully",
-      })
+      });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to update question",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleCompleteInterview = async (assessment: any) => {
     try {
@@ -151,29 +159,29 @@ export default function InterviewSession({ interview: initialInterview }: { inte
           action: "completeInterview",
           data: assessment,
         }),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error("Failed to complete interview")
+        throw new Error("Failed to complete interview");
       }
 
-      const updatedInterview = await response.json()
-      setInterview(updatedInterview)
+      const updatedInterview = await response.json();
+      setInterview(updatedInterview);
 
       toast({
         title: "Success",
         description: "Interview completed successfully",
-      })
+      });
 
-      router.refresh()
+      router.refresh();
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to complete interview",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -189,7 +197,9 @@ export default function InterviewSession({ interview: initialInterview }: { inte
         </div>
 
         {interview.status === "in-progress" && (
-          <Button onClick={() => setActiveTab("final-assessment")} className="mt-4 md:mt-0">
+          <Button
+            onClick={() => setActiveTab("final-assessment")}
+            className="mt-4 md:mt-0">
             Complete Interview
           </Button>
         )}
@@ -224,26 +234,31 @@ export default function InterviewSession({ interview: initialInterview }: { inte
             <div>
               <p className="text-sm font-medium">Skills</p>
               <div className="flex flex-wrap gap-2 mt-1">
-                {interview.candidate.skills.map((skill) => (
-                  <Badge key={skill} variant="outline">
+                {interview.candidate.skills?.map((skill) => (
+                  <Badge
+                    key={skill}
+                    variant="outline">
                     {skill}
                   </Badge>
-                ))}
+                )) || <span className="text-gray-500">No skills specified</span>}
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-4">
-          <TabsTrigger value="question-generator" disabled={interview.status === "completed"}>
+          <TabsTrigger
+            value="question-generator"
+            disabled={interview.status === "completed"}>
             Question Generator
           </TabsTrigger>
           <TabsTrigger
             value="code-editor"
-            disabled={interview.questions.length === 0 || interview.status === "completed"}
-          >
+            disabled={interview.questions.length === 0 || interview.status === "completed"}>
             Code Editor
           </TabsTrigger>
           <TabsTrigger
@@ -252,8 +267,7 @@ export default function InterviewSession({ interview: initialInterview }: { inte
               interview.questions.length === 0 ||
               !interview.questions[activeQuestionIndex]?.candidateCode ||
               interview.status === "completed"
-            }
-          >
+            }>
             AI Evaluation
           </TabsTrigger>
           <TabsTrigger value="final-assessment">Final Assessment</TabsTrigger>
@@ -278,14 +292,17 @@ export default function InterviewSession({ interview: initialInterview }: { inte
           ) : (
             <Card>
               <CardContent className="pt-6">
-                <p className="text-center text-gray-500">No questions added yet. Generate a question first.</p>
+                <p className="text-center text-gray-500">
+                  No questions added yet. Generate a question first.
+                </p>
               </CardContent>
             </Card>
           )}
         </TabsContent>
 
         <TabsContent value="ai-evaluation">
-          {interview.questions.length > 0 && interview.questions[activeQuestionIndex]?.candidateCode ? (
+          {interview.questions.length > 0 &&
+          interview.questions[activeQuestionIndex]?.candidateCode ? (
             <AIEvaluation
               question={interview.questions[activeQuestionIndex]}
               candidateSkills={interview.candidate.skills}
@@ -295,17 +312,21 @@ export default function InterviewSession({ interview: initialInterview }: { inte
           ) : (
             <Card>
               <CardContent className="pt-6">
-                <p className="text-center text-gray-500">No code to evaluate yet. Add code in the Code Editor first.</p>
+                <p className="text-center text-gray-500">
+                  No code to evaluate yet. Add code in the Code Editor first.
+                </p>
               </CardContent>
             </Card>
           )}
         </TabsContent>
 
         <TabsContent value="final-assessment">
-          <FinalAssessment interview={interview} onCompleteInterview={handleCompleteInterview} />
+          <FinalAssessment
+            interview={interview}
+            onCompleteInterview={handleCompleteInterview}
+          />
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
-

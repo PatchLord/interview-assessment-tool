@@ -1,23 +1,30 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import connectToDatabase from "@/lib/mongodb"
-import Interview from "@/lib/models/interview"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import InterviewsList from "@/components/interviews-list"
-import StartInterviewButton from "@/components/start-interview-button"
+import InterviewsList from "@/components/interviews-list";
+import StartInterviewButton from "@/components/start-interview-button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { authOptions } from "@/lib/auth";
+import Interview from "@/lib/models/interview";
+import connectToDatabase from "@/lib/mongodb";
+import { getServerSession } from "next-auth";
 
 async function getInterviews() {
-  await connectToDatabase()
-  const session = await getServerSession(authOptions)
+  await connectToDatabase();
+  const session = await getServerSession(authOptions);
 
   // If admin, get all interviews, otherwise get only interviews conducted by the user
-  const query = session?.user?.role === "admin" ? {} : { interviewer: session?.user?.id }
+  const query = session?.user?.role === "admin" ? {} : { interviewer: session?.user?.id };
 
-  return Interview.find(query).populate("candidate").populate("interviewer", "-password").sort({ date: -1 }).lean()
+  const interviews = await Interview.find(query)
+    .populate("candidate")
+    .populate("interviewer", "-password")
+    .sort({ date: -1 })
+    .lean();
+
+  // Properly serialize MongoDB objects to plain JavaScript objects
+  return JSON.parse(JSON.stringify(interviews));
 }
 
 export default async function InterviewsPage() {
-  const interviews = await getInterviews()
+  const interviews = await getInterviews();
 
   return (
     <div className="space-y-6">
@@ -35,6 +42,5 @@ export default async function InterviewsPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
-

@@ -1,25 +1,28 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { redirect } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import connectToDatabase from "@/lib/mongodb"
-import User from "@/lib/models/user"
-import InterviewersList from "@/components/interviewers-list"
-import AddInterviewerForm from "@/components/add-interviewer-form"
+import AddInterviewerForm from "@/components/add-interviewer-form";
+import InterviewersList from "@/components/interviewers-list";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { authOptions } from "@/lib/auth";
+import User from "@/lib/models/user";
+import connectToDatabase from "@/lib/mongodb";
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 
 async function getInterviewers() {
-  await connectToDatabase()
-  return User.find({ role: "interviewer" }).select("-password").lean()
+  await connectToDatabase();
+  const interviewers = await User.find({ role: "interviewer" }).select("-password").lean();
+
+  // Properly serialize MongoDB objects to plain JavaScript objects
+  return JSON.parse(JSON.stringify(interviewers));
 }
 
 export default async function InterviewersPage() {
-  const session = await getServerSession(authOptions)
+  const session = await getServerSession(authOptions);
 
   if (!session || session.user.role !== "admin") {
-    redirect("/dashboard")
+    redirect("/dashboard");
   }
 
-  const interviewers = await getInterviewers()
+  const interviewers = await getInterviewers();
 
   return (
     <div className="space-y-6">
@@ -49,6 +52,5 @@ export default async function InterviewersPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

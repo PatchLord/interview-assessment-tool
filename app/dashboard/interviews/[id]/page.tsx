@@ -5,8 +5,8 @@ import Interview from "@/lib/models/interview";
 import connectToDatabase from "@/lib/mongodb";
 import { getServerSession } from "next-auth";
 import { notFound, redirect } from "next/navigation";
-import { Suspense } from "react";
 
+// Helper functions remain unchanged
 async function getInterview(id: string) {
   // Skip database query if we're on the "new" route
   if (id === "new") {
@@ -60,32 +60,26 @@ async function createNewInterview(candidateId: string, userId: string) {
   }
 }
 
-// Wrapper component that extracts the params without directly accessing them
-// This avoids the "params should be awaited" error
-function InterviewPageWrapper({
+// Main page component that awaits the params
+export default async function InterviewPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams: { [key: string]: string | string[] | undefined };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  // We know what the param names are, so we can safely destructure them
-  const id = params.id;
-  const candidateId = searchParams.candidateId as string | undefined;
+  // Await the params and extract values
+  const id = (await params).id;
 
-  // We use a client component wrapper that doesn't trigger the warning
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <InterviewPageContent
-        id={id}
-        candidateId={candidateId}
-      />
-    </Suspense>
-  );
+  // Extract candidateId safely
+  const candidateId = (await searchParams).candidateId as string;
+
+  // Continue with the rest of the component logic
+  return await renderInterviewContent(id, candidateId);
 }
 
-// This component receives the extracted values as props
-async function InterviewPageContent({ id, candidateId }: { id: string; candidateId?: string }) {
+// This helper function handles the actual content rendering
+async function renderInterviewContent(id: string, candidateId?: string) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
@@ -123,6 +117,3 @@ async function InterviewPageContent({ id, candidateId }: { id: string; candidate
 
   return <InterviewSession interview={interview} />;
 }
-
-// Export the wrapper as the default component
-export default InterviewPageWrapper;

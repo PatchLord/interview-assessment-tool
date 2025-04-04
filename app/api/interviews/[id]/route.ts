@@ -4,20 +4,23 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 // Get a specific interview
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Extract the interview ID from params
-    const interviewId = params?.id;
+    console.log("Session user:", params);
+
+    // Properly await the interview ID parameter
+    const interviewId = (await params).id;
 
     // Connection is already established at application startup
     const interview = await Interview.findById(interviewId)
       .populate("candidate")
       .populate("interviewer", "-password");
+
     if (!interview) {
       return NextResponse.json({ error: "Interview not found" }, { status: 404 });
     }
@@ -27,14 +30,14 @@ export async function GET(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    return NextResponse.json(interview);
+    return NextResponse.json(JSON.parse(JSON.stringify(interview)));
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch interview" }, { status: 500 });
   }
 }
 
 // Update an interview (add question, update question, complete interview)
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -46,8 +49,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Extract the interview ID from params
-    const interviewId = params?.id;
+    // Properly await the interview ID parameter
+    const interviewId = (await params).id;
 
     // Connection is already established at application startup
     const interview = await Interview.findById(interviewId);
@@ -55,9 +58,24 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       return NextResponse.json({ error: "Interview not found" }, { status: 404 });
     }
 
-    // Check if user is the interviewer
-    if (interview.interviewer.toString() !== session.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Debug logs
+    console.log("Session user ID:", session.user.id);
+    console.log("Interviewer ID:", interview.interviewer);
+    console.log("User role:", session.user.role);
+
+    // Check if user is the interviewer or an admin
+    const interviewerId = interview.interviewer.toString();
+    const userIsInterviewer = interviewerId === session.user.id;
+    const userIsAdmin = session.user.role === "admin";
+
+    if (!userIsInterviewer && !userIsAdmin) {
+      return NextResponse.json(
+        {
+          error: "Unauthorized",
+          details: "Only the assigned interviewer or an admin can update this interview",
+        },
+        { status: 401 }
+      );
     }
 
     let updatedInterview;
@@ -84,8 +102,16 @@ export async function PATCH(request: Request, { params }: { params: { id: string
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
 
-    return NextResponse.json(updatedInterview);
+    // Return a properly serialized version of the updated interview
+    return NextResponse.json(JSON.parse(JSON.stringify(updatedInterview)));
   } catch (error) {
-    return NextResponse.json({ error: "Failed to update interview" }, { status: 500 });
+    console.error("Error updating interview:", error);
+    return NextResponse.json(
+      {
+        error: "Failed to update interview",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
   }
 }

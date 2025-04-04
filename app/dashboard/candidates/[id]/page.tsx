@@ -1,43 +1,44 @@
-import { notFound } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { ExternalLink, FileText } from "lucide-react"
-import connectToDatabase from "@/lib/mongodb"
-import Candidate from "@/lib/models/candidate"
-import Interview from "@/lib/models/interview"
-import Link from "next/link"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Candidate from "@/lib/models/candidate";
+import Interview from "@/lib/models/interview";
+import connectToDatabase from "@/lib/mongodb";
+import { ExternalLink, FileText } from "lucide-react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 
 async function getCandidate(id: string) {
-  await connectToDatabase()
+  await connectToDatabase();
 
-  const candidate = await Candidate.findById(id)
+  const candidate = await Candidate.findById(id);
 
   if (!candidate) {
-    return null
+    return null;
   }
 
-  return JSON.parse(JSON.stringify(candidate))
+  return JSON.parse(JSON.stringify(candidate));
 }
 
 async function getCandidateInterviews(candidateId: string) {
-  await connectToDatabase()
+  await connectToDatabase();
 
   const interviews = await Interview.find({ candidate: candidateId })
     .populate("interviewer", "-password")
-    .sort({ date: -1 })
+    .sort({ date: -1 });
 
-  return JSON.parse(JSON.stringify(interviews))
+  return JSON.parse(JSON.stringify(interviews));
 }
 
-export default async function CandidateDetailPage({ params }: { params: { id: string } }) {
-  const candidate = await getCandidate(params.id)
+export default async function CandidateDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const candidateId = (await params).id;
+  const candidate = await getCandidate(candidateId);
 
   if (!candidate) {
-    notFound()
+    notFound();
   }
 
-  const interviews = await getCandidateInterviews(params.id)
+  const interviews = await getCandidateInterviews(candidateId);
 
   return (
     <div className="space-y-6">
@@ -76,7 +77,9 @@ export default async function CandidateDetailPage({ params }: { params: { id: st
                   <p className="text-sm font-medium">Skills</p>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {candidate.skills.map((skill: string) => (
-                      <Badge key={skill} variant="secondary">
+                      <Badge
+                        key={skill}
+                        variant="secondary">
                         {skill}
                       </Badge>
                     ))}
@@ -89,8 +92,7 @@ export default async function CandidateDetailPage({ params }: { params: { id: st
                       href={candidate.resumeUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center text-primary hover:underline"
-                    >
+                      className="flex items-center text-primary hover:underline">
                       <FileText className="h-4 w-4 mr-2" />
                       View Resume
                       <ExternalLink className="h-4 w-4 ml-1" />
@@ -109,25 +111,37 @@ export default async function CandidateDetailPage({ params }: { params: { id: st
               {interviews.length > 0 ? (
                 <div className="space-y-4">
                   {interviews.map((interview: any) => (
-                    <div key={interview._id} className="p-4 border rounded-lg">
+                    <div
+                      key={interview._id}
+                      className="p-4 border rounded-lg">
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                         <div>
-                          <p className="font-medium">Interviewed on {new Date(interview.date).toLocaleDateString()}</p>
-                          <p className="text-sm text-gray-500">Interviewer: {interview.interviewer.name}</p>
+                          <p className="font-medium">
+                            Interviewed on {new Date(interview.date).toLocaleDateString()}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Interviewer: {interview.interviewer.name}
+                          </p>
                         </div>
 
                         <div className="mt-4 md:mt-0">
                           <div className="flex items-center space-x-2">
-                            <Badge variant={interview.status === "completed" ? "success" : "secondary"}>
+                            <Badge
+                              variant={interview.status === "completed" ? "success" : "secondary"}>
                               {interview.status === "completed" ? "Completed" : "In Progress"}
                             </Badge>
                             {interview.status === "completed" && interview.finalAssessment && (
-                              <Badge variant="outline">Score: {interview.finalAssessment.overallScore}/10</Badge>
+                              <Badge variant="outline">
+                                Score: {interview.finalAssessment.overallScore}/10
+                              </Badge>
                             )}
                           </div>
 
                           <Link href={`/dashboard/interviews/${interview._id}`}>
-                            <Button variant="outline" size="sm" className="mt-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="mt-2">
                               View Details
                             </Button>
                           </Link>
@@ -154,8 +168,13 @@ export default async function CandidateDetailPage({ params }: { params: { id: st
               </Link>
 
               {candidate.resumeUrl && (
-                <a href={candidate.resumeUrl} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" className="w-full">
+                <a
+                  href={candidate.resumeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer">
+                  <Button
+                    variant="outline"
+                    className="w-full">
                     <FileText className="h-4 w-4 mr-2" />
                     Download Resume
                   </Button>
@@ -166,6 +185,5 @@ export default async function CandidateDetailPage({ params }: { params: { id: st
         </div>
       </div>
     </div>
-  )
+  );
 }
-
