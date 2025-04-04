@@ -11,8 +11,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log("Session user:", params);
-
     // Properly await the interview ID parameter
     const interviewId = (await params).id;
 
@@ -35,6 +33,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     return NextResponse.json(JSON.parse(JSON.stringify(interview)));
   } catch (error) {
+    console.error("Error fetching interview:", error);
     return NextResponse.json({ error: "Failed to fetch interview" }, { status: 500 });
   }
 }

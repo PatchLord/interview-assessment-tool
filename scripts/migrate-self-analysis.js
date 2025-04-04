@@ -1,80 +1,60 @@
-// Convert self analysis from string format to numerical scores
-// Run with: node scripts/migrate-self-analysis.js
+// Script to add default selfAnalysis field to existing candidates
+import { MongoClient } from "mongodb";
 
-const mongoose = require("mongoose");
-require("dotenv").config();
-
-// Connect to MongoDB
-async function connectToDatabase() {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log("Connected to MongoDB");
-  } catch (error) {
-    console.error("Failed to connect to MongoDB", error);
-    process.exit(1);
-  }
-}
-
-// Define the Candidate schema for migration purposes
-const CandidateSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true },
-  position: { type: String, enum: ["Intern", "Full-Time"], required: true },
-  skills: [{ type: String }],
-  selfAnalysis: mongoose.Schema.Types.Mixed,
-  resumeUrl: { type: String },
-  interviewLevel: { type: String, enum: ["High", "Mid", "Low"], required: true },
-  createdAt: { type: Date, default: Date.now },
-});
-
-const Candidate = mongoose.models.Candidate || mongoose.model("Candidate", CandidateSchema);
-
-// Map old string values to numeric scores
-const selfAnalysisMap = {
-  "BE high, FE high": { beScore: 9, feScore: 9 },
-  "BE high, FE mid": { beScore: 9, feScore: 6 },
-  "BE high, FE low": { beScore: 9, feScore: 3 },
-  "BE mid, FE high": { beScore: 6, feScore: 9 },
-  "BE mid, FE mid": { beScore: 6, feScore: 6 },
-  "BE mid, FE low": { beScore: 6, feScore: 3 },
-  "BE low, FE high": { beScore: 3, feScore: 9 },
-  "BE low, FE mid": { beScore: 3, feScore: 6 },
-  "BE low, FE low": { beScore: 3, feScore: 3 },
-};
+// Replace with your MongoDB connection string from .env
+const MONGODB_URI = process.env.MONGODB_URI || "";
 
 async function migrateSelfAnalysis() {
+  if (!MONGODB_URI) {
+    console.error("MONGODB_URI is not defined in your environment variables");
+    process.exit(1);
+  }
+
   try {
-    // Find all candidates with string selfAnalysis
-    const candidates = await Candidate.find({
-      selfAnalysis: { $type: "string" },
-    });
+    // Connect to the MongoDB database
+    const client = new MongoClient(MONGODB_URI);
+    await client.connect();
+    console.log("Connected to MongoDB");
 
-    console.log(`Found ${candidates.length} candidates with string selfAnalysis`);
+    const db = client.db();
+    const candidatesCollection = db.collection("candidates");
 
-    for (const candidate of candidates) {
-      const oldValue = candidate.selfAnalysis;
+    // Find all candidates without selfAnalysis field
+    const candidatesWithoutSelfAnalysis = await candidatesCollection
+      .find({
+        selfAnalysis: { $exists: false },
+      })
+      .toArray();
 
-      if (selfAnalysisMap[oldValue]) {
-        // Update with the numeric scores
-        candidate.selfAnalysis = selfAnalysisMap[oldValue];
-        await candidate.save();
-        console.log(
-          `Updated candidate ${candidate.name} (${candidate.email}): ${oldValue} -> BE: ${candidate.selfAnalysis.beScore}, FE: ${candidate.selfAnalysis.feScore}`
+    console.log(`Found ${candidatesWithoutSelfAnalysis.length} candidates without selfAnalysis`);
+
+    if (candidatesWithoutSelfAnalysis.length > 0) {
+      // Update each candidate to add a default selfAnalysis field
+      const updatePromises = candidatesWithoutSelfAnalysis.map((candidate) => {
+        return candidatesCollection.updateOne(
+          { _id: candidate._id },
+          {
+            $set: {
+              selfAnalysis: {
+                beScore: 5, // Default middle value
+                feScore: 5, // Default middle value
+              },
+            },
+          }
         );
-      } else {
-        console.log(`Warning: Unknown selfAnalysis value for ${candidate.name}: ${oldValue}`);
-      }
+      });
+
+      const results = await Promise.all(updatePromises);
+      console.log(`Updated ${results.length} candidates with default selfAnalysis values`);
     }
 
+    await client.close();
+    console.log("MongoDB connection closed");
     console.log("Migration completed successfully");
   } catch (error) {
-    console.error("Migration failed:", error);
-  } finally {
-    // Close the database connection
-    await mongoose.connection.close();
-    console.log("Disconnected from MongoDB");
+    console.error("An error occurred during migration:", error);
   }
 }
 
 // Run the migration
-connectToDatabase().then(migrateSelfAnalysis).catch(console.error);
+migrateSelfAnalysis();

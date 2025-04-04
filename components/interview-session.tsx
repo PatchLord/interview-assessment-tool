@@ -21,7 +21,10 @@ interface Interview {
     email: string;
     position: string;
     skills: string[];
-    selfAnalysis: string;
+    selfAnalysis?: {
+      beScore: number;
+      feScore: number;
+    };
     interviewLevel: string;
   };
   interviewer: {
@@ -230,7 +233,11 @@ export default function InterviewSession({
             </div>
             <div>
               <p className="text-sm font-medium">Self Analysis</p>
-              <p>{interview.candidate.selfAnalysis}</p>
+              <p>
+                {interview.candidate.selfAnalysis
+                  ? `BE Score: ${interview.candidate.selfAnalysis.beScore}, FE Score: ${interview.candidate.selfAnalysis.feScore}`
+                  : "No self analysis provided"}
+              </p>
             </div>
             <div>
               <p className="text-sm font-medium">Skills</p>

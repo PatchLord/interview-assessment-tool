@@ -11,7 +11,7 @@ import { notFound } from "next/navigation";
 async function getCandidate(id: string) {
   await connectToDatabase();
 
-  const candidate = await Candidate.findById(id);
+  const candidate = await Candidate.findById(id).lean();
 
   if (!candidate) {
     return null;
