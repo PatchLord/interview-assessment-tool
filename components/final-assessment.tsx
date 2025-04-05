@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useEffect, useState } from "react";
 
 interface Interview {
   _id: string;
@@ -49,10 +49,7 @@ interface FinalAssessmentProps {
   onCompleteInterview: (assessment: any) => void;
 }
 
-export default function FinalAssessment({
-  interview,
-  onCompleteInterview,
-}: FinalAssessmentProps) {
+export default function FinalAssessment({ interview, onCompleteInterview }: FinalAssessmentProps) {
   const [technicalProficiency, setTechnicalProficiency] = useState<number>(
     interview.finalAssessment?.technicalProficiency || 0
   );
@@ -71,9 +68,7 @@ export default function FinalAssessment({
   const [areasForImprovement, setAreasForImprovement] = useState<string>(
     interview.finalAssessment?.areasForImprovement?.join("\n") || ""
   );
-  const [comments, setComments] = useState<string>(
-    interview.finalAssessment?.comments || ""
-  );
+  const [comments, setComments] = useState<string>(interview.finalAssessment?.comments || "");
 
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [assessmentGenerated, setAssessmentGenerated] = useState<boolean>(
@@ -85,23 +80,17 @@ export default function FinalAssessment({
   // Calculate average scores from questions with AI evaluations
   useEffect(() => {
     if (interview.questions.length > 0 && interview.status === "in-progress") {
-      const questionsWithEval = interview.questions.filter(
-        (q) => q.aiEvaluation
-      );
+      const questionsWithEval = interview.questions.filter((q) => q.aiEvaluation);
 
       if (questionsWithEval.length > 0) {
         const avgCodeQuality = Math.round(
-          questionsWithEval.reduce(
-            (sum, q) => sum + (q.aiEvaluation?.codeQuality || 0),
-            0
-          ) / questionsWithEval.length
+          questionsWithEval.reduce((sum, q) => sum + (q.aiEvaluation?.codeQuality || 0), 0) /
+            questionsWithEval.length
         );
 
         const avgTechnicalSkill = Math.round(
-          questionsWithEval.reduce(
-            (sum, q) => sum + (q.aiEvaluation?.technicalSkill || 0),
-            0
-          ) / questionsWithEval.length
+          questionsWithEval.reduce((sum, q) => sum + (q.aiEvaluation?.technicalSkill || 0), 0) /
+            questionsWithEval.length
         );
 
         const avgProblemUnderstanding = Math.round(
@@ -115,9 +104,7 @@ export default function FinalAssessment({
         setTechnicalProficiency(avgTechnicalSkill || 0);
         setProblemSolving(avgProblemUnderstanding || 0);
         setOverallScore(
-          Math.round(
-            (avgCodeQuality + avgTechnicalSkill + avgProblemUnderstanding) / 3
-          ) || 0
+          Math.round((avgCodeQuality + avgTechnicalSkill + avgProblemUnderstanding) / 3) || 0
         );
       }
     }
@@ -156,11 +143,7 @@ Feedback: ${q.aiEvaluation.feedback}`
     : "No AI evaluation available"
 }
 
-${
-  q.interviewerNotes
-    ? `Interviewer Notes: ${q.interviewerNotes}`
-    : "No interviewer notes"
-}
+${q.interviewerNotes ? `Interviewer Notes: ${q.interviewerNotes}` : "No interviewer notes"}
 `;
         })
         .join("\n\n");
@@ -192,7 +175,7 @@ ${
         const jsonMatch = assessmentText.match(/```json\s*([\s\S]*?)\s*```/);
         let parsedAssessment;
 
-        if (jsonMatch && jsonMatch[1]) {
+        if (jsonMatch?.[1]) {
           parsedAssessment = JSON.parse(jsonMatch[1]);
         } else {
           // Try parsing the entire response as JSON
@@ -203,7 +186,7 @@ ${
           }
         }
 
-        if (parsedAssessment && parsedAssessment.finalAssessment) {
+        if (parsedAssessment?.finalAssessment) {
           const finalAssessment = parsedAssessment.finalAssessment;
 
           // Update state with the parsed data
@@ -212,10 +195,7 @@ ${
           setCodeQuality(finalAssessment.codeQualityAndEfficiency || 0);
           setOverallScore(finalAssessment.overallScore || 0);
 
-          if (
-            finalAssessment.areasOfStrength &&
-            Array.isArray(finalAssessment.areasOfStrength)
-          ) {
+          if (finalAssessment.areasOfStrength && Array.isArray(finalAssessment.areasOfStrength)) {
             setStrengths(finalAssessment.areasOfStrength.join("\n"));
           }
 
@@ -223,9 +203,7 @@ ${
             finalAssessment.areasForImprovement &&
             Array.isArray(finalAssessment.areasForImprovement)
           ) {
-            setAreasForImprovement(
-              finalAssessment.areasForImprovement.join("\n")
-            );
+            setAreasForImprovement(finalAssessment.areasForImprovement.join("\n"));
           }
 
           if (finalAssessment.summaryComments) {
@@ -250,26 +228,16 @@ ${
       const areasForImprovementMatch = assessmentText.match(
         /Areas for Improvement[:\s]+([\s\S]*?)(?=Summary Comments|$)/i
       );
-      const commentsMatch = assessmentText.match(
-        /Summary Comments[:\s]+([\s\S]*?)$/i
-      );
+      const commentsMatch = assessmentText.match(/Summary Comments[:\s]+([\s\S]*?)$/i);
 
       // Extract scores
-      const technicalProficiencyMatch = assessmentText.match(
-        /Technical Proficiency[:\s]+(\d+)/i
-      );
-      const problemSolvingMatch = assessmentText.match(
-        /Problem-Solving Approach[:\s]+(\d+)/i
-      );
-      const codeQualityMatch = assessmentText.match(
-        /Code Quality and Efficiency[:\s]+(\d+)/i
-      );
-      const overallScoreMatch = assessmentText.match(
-        /Overall Score[:\s]+(\d+)/i
-      );
+      const technicalProficiencyMatch = assessmentText.match(/Technical Proficiency[:\s]+(\d+)/i);
+      const problemSolvingMatch = assessmentText.match(/Problem-Solving Approach[:\s]+(\d+)/i);
+      const codeQualityMatch = assessmentText.match(/Code Quality and Efficiency[:\s]+(\d+)/i);
+      const overallScoreMatch = assessmentText.match(/Overall Score[:\s]+(\d+)/i);
 
       // Update state with extracted information
-      if (strengthsMatch && strengthsMatch[1]) {
+      if (strengthsMatch?.[1]) {
         const strengthsList = strengthsMatch[1]
           .trim()
           .split(/\n|-/)
@@ -278,7 +246,7 @@ ${
         setStrengths(strengthsList.join("\n"));
       }
 
-      if (areasForImprovementMatch && areasForImprovementMatch[1]) {
+      if (areasForImprovementMatch?.[1]) {
         const areasList = areasForImprovementMatch[1]
           .trim()
           .split(/\n|-/)
@@ -287,25 +255,23 @@ ${
         setAreasForImprovement(areasList.join("\n"));
       }
 
-      if (commentsMatch && commentsMatch[1]) {
+      if (commentsMatch?.[1]) {
         setComments(commentsMatch[1].trim());
       }
 
-      if (technicalProficiencyMatch && technicalProficiencyMatch[1]) {
-        setTechnicalProficiency(
-          Number.parseInt(technicalProficiencyMatch[1], 10)
-        );
+      if (technicalProficiencyMatch?.[1]) {
+        setTechnicalProficiency(Number.parseInt(technicalProficiencyMatch[1], 10));
       }
 
-      if (problemSolvingMatch && problemSolvingMatch[1]) {
+      if (problemSolvingMatch?.[1]) {
         setProblemSolving(Number.parseInt(problemSolvingMatch[1], 10));
       }
 
-      if (codeQualityMatch && codeQualityMatch[1]) {
+      if (codeQualityMatch?.[1]) {
         setCodeQuality(Number.parseInt(codeQualityMatch[1], 10));
       }
 
-      if (overallScoreMatch && overallScoreMatch[1]) {
+      if (overallScoreMatch?.[1]) {
         setOverallScore(Number.parseInt(overallScoreMatch[1], 10));
       }
 
@@ -321,43 +287,28 @@ ${
       });
     } finally {
       setIsGenerating(false);
+      setAssessmentGenerated(true); // Mark as generated regardless of success or failure
     }
   };
 
-  // Auto-generate assessment when component is loaded and interview is in-progress
+  // Run once when component mounts to generate initial assessment
   useEffect(() => {
-    // Only generate assessment if:
-    // 1. Interview is in-progress
-    // 2. Assessment hasn't been generated yet in this session
-    // 3. There's no existing finalAssessment in the interview data
-    // 4. There are questions with AI evaluations
+    // Generate assessment automatically on first load if conditions are met
     if (
       interview.status === "in-progress" &&
-      !assessmentGenerated &&
       !interview.finalAssessment &&
-      interview.questions.length > 0
+      interview.questions.length > 0 &&
+      interview.questions.some((q) => q.aiEvaluation)
     ) {
-      // Check if at least one question has an AI evaluation
-      const hasEvaluations = interview.questions.some((q) => q.aiEvaluation);
-      
-      if (hasEvaluations) {
-        handleGenerateAssessment();
-        setAssessmentGenerated(true);
-      }
+      handleGenerateAssessment();
     }
-  }, [
-    interview.status,
-    assessmentGenerated,
-    interview.questions,
-    interview.finalAssessment,
-    handleGenerateAssessment,
-  ]);
+  }, [interview._id]); // Only depend on interview ID to ensure it runs once per interview
 
   const handleCompleteInterview = async () => {
     if (isSubmitting) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const assessment = {
         technicalProficiency,
@@ -365,15 +316,13 @@ ${
         codeQuality,
         overallScore,
         strengths: strengths.split("\n").filter((s) => s.trim().length > 0),
-        areasForImprovement: areasForImprovement
-          .split("\n")
-          .filter((s) => s.trim().length > 0),
+        areasForImprovement: areasForImprovement.split("\n").filter((s) => s.trim().length > 0),
         comments,
       };
-      
+
       // Call the onCompleteInterview function to store the assessment
       await onCompleteInterview(assessment);
-      
+
       toast({
         title: "Success",
         description: "Final assessment submitted successfully",
@@ -401,8 +350,7 @@ ${
                 <Button
                   onClick={handleGenerateAssessment}
                   variant="outline"
-                  disabled={isGenerating || interview.questions.length === 0}
-                >
+                  disabled={isGenerating || interview.questions.length === 0}>
                   {isGenerating ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -414,8 +362,7 @@ ${
                 </Button>
                 <Button
                   onClick={handleCompleteInterview}
-                  disabled={isSubmitting}
-                >
+                  disabled={isSubmitting}>
                   Submit Final Assessment
                 </Button>
               </div>
@@ -423,8 +370,8 @@ ${
           </div>
           {interview.status === "in-progress" && (
             <p className="text-sm text-muted-foreground mt-2">
-              Review and edit the AI-generated assessment before submitting. All
-              fields are editable.
+              Review and edit the AI-generated assessment before submitting. All fields are
+              editable.
             </p>
           )}
           {interview.status === "completed" && (
@@ -437,9 +384,7 @@ ${
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="technicalProficiency">
-                  Technical Proficiency (1-10)
-                </Label>
+                <Label htmlFor="technicalProficiency">Technical Proficiency (1-10)</Label>
                 <div className="flex items-center space-x-2">
                   <Input
                     id="technicalProficiency"
@@ -447,23 +392,15 @@ ${
                     min="1"
                     max="10"
                     value={technicalProficiency}
-                    onChange={(e) =>
-                      setTechnicalProficiency(
-                        Number.parseInt(e.target.value, 10)
-                      )
-                    }
+                    onChange={(e) => setTechnicalProficiency(Number.parseInt(e.target.value, 10))}
                     disabled={interview.status === "completed"}
                   />
-                  <span className="text-2xl font-bold">
-                    {technicalProficiency}/10
-                  </span>
+                  <span className="text-[22px] font-semibold">{technicalProficiency}/10</span>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="problemSolving">
-                  Problem-Solving Approach (1-10)
-                </Label>
+                <Label htmlFor="problemSolving">Problem-Solving Approach (1-10)</Label>
                 <div className="flex items-center space-x-2">
                   <Input
                     id="problemSolving"
@@ -471,23 +408,17 @@ ${
                     min="1"
                     max="10"
                     value={problemSolving}
-                    onChange={(e) =>
-                      setProblemSolving(Number.parseInt(e.target.value, 10))
-                    }
+                    onChange={(e) => setProblemSolving(Number.parseInt(e.target.value, 10))}
                     disabled={interview.status === "completed"}
                   />
-                  <span className="text-2xl font-bold">
-                    {problemSolving}/10
-                  </span>
+                  <span className="text-[22px] font-semibold">{problemSolving}/10</span>
                 </div>
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="codeQuality">
-                  Code Quality and Efficiency (1-10)
-                </Label>
+                <Label htmlFor="codeQuality">Code Quality and Efficiency (1-10)</Label>
                 <div className="flex items-center space-x-2">
                   <Input
                     id="codeQuality"
@@ -495,12 +426,10 @@ ${
                     min="1"
                     max="10"
                     value={codeQuality}
-                    onChange={(e) =>
-                      setCodeQuality(Number.parseInt(e.target.value, 10))
-                    }
+                    onChange={(e) => setCodeQuality(Number.parseInt(e.target.value, 10))}
                     disabled={interview.status === "completed"}
                   />
-                  <span className="text-2xl font-bold">{codeQuality}/10</span>
+                  <span className="text-[22px] font-semibold">{codeQuality}/10</span>
                 </div>
               </div>
 
@@ -513,12 +442,10 @@ ${
                     min="1"
                     max="10"
                     value={overallScore}
-                    onChange={(e) =>
-                      setOverallScore(Number.parseInt(e.target.value, 10))
-                    }
+                    onChange={(e) => setOverallScore(Number.parseInt(e.target.value, 10))}
                     disabled={interview.status === "completed"}
                   />
-                  <span className="text-2xl font-bold">{overallScore}/10</span>
+                  <span className="text-[22px] font-semibold">{overallScore}/10</span>
                 </div>
               </div>
             </div>
@@ -537,9 +464,7 @@ ${
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="areasForImprovement">
-              Areas for Improvement (one per line)
-            </Label>
+            <Label htmlFor="areasForImprovement">Areas for Improvement (one per line)</Label>
             <Textarea
               id="areasForImprovement"
               value={areasForImprovement}

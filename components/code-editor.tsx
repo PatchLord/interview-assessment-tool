@@ -29,6 +29,7 @@ interface CodeEditorProps {
     index: number,
     data: { candidateCode?: string; interviewerNotes?: string }
   ) => void;
+  readOnly?: boolean;
 }
 
 export default function CodeEditor({
@@ -36,6 +37,7 @@ export default function CodeEditor({
   activeQuestionIndex,
   setActiveQuestionIndex,
   onUpdateQuestion,
+  readOnly = false,
 }: CodeEditorProps) {
   const [code, setCode] = useState<string>(
     questions[activeQuestionIndex]?.candidateCode || ""
