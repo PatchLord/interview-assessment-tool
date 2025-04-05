@@ -163,6 +163,16 @@ Provide a detailed assessment covering:
 7. Summary Comments
 
 Assessment:
+give me only json object as final response 
+  "finalAssessment": 
+      technicalProficiency: "...",
+      problemSolvingApproach: "...",
+      codeQualityAndEfficiency: "...",
+      overallScore: "...",
+      areasOfStrength: "...",
+      areasForImprovement: "..."
+      summaryComments: "..."
+
 `;
 
 // Create prompt templates

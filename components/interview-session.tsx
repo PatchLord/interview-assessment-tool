@@ -5,6 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AIEvaluation from "./ai-evaluation";
@@ -67,6 +75,9 @@ export default function InterviewSession({
   const [interview, setInterview] = useState<Interview>(initialInterview);
   const [activeQuestionIndex, setActiveQuestionIndex] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<string>("question-generator");
+  const [completeInterviewClicked, setCompleteInterviewClicked] =
+    useState<boolean>(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState<boolean>(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -74,6 +85,7 @@ export default function InterviewSession({
     // If interview is completed, show the final assessment tab
     if (interview.status === "completed") {
       setActiveTab("final-assessment");
+      setCompleteInterviewClicked(true);
     }
   }, [interview.status]);
 
@@ -163,10 +175,24 @@ export default function InterviewSession({
           action: "completeInterview",
           data: assessment,
         }),
+        credentials: "include", // Include cookies for authentication
       });
 
       if (!response.ok) {
-        throw new Error("Failed to complete interview");
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Error completing interview:", errorData);
+
+        if (response.status === 401) {
+          toast({
+            title: "Authentication Error",
+            description:
+              "Your session may have expired. Please refresh the page and try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        throw new Error(errorData.error || "Failed to complete interview");
       }
 
       const updatedInterview = await response.json();
@@ -177,13 +203,21 @@ export default function InterviewSession({
         description: "Interview completed successfully",
       });
 
+      // Set the interview as completed in the UI
+      setCompleteInterviewClicked(true);
+      setActiveTab("final-assessment");
+
       router.refresh();
+      return updatedInterview;
     } catch (error) {
+      console.error("Complete interview error:", error);
       toast({
         title: "Error",
-        description: "Failed to complete interview",
+        description:
+          typeof error === "string" ? error : "Failed to complete interview",
         variant: "destructive",
       });
+      throw error;
     }
   };
 
@@ -193,22 +227,19 @@ export default function InterviewSession({
         <div>
           <h1 className="text-3xl font-bold">Interview Session</h1>
           <div className="flex items-center space-x-2 mt-2">
-            <Badge variant={interview.status === "completed" ? "success" : "secondary"}>
+            <Badge
+              variant={
+                interview.status === "completed" ? "success" : "secondary"
+              }
+            >
               {interview.status === "completed" ? "Completed" : "In Progress"}
             </Badge>
-            <span className="text-gray-500">{new Date(interview.date).toLocaleDateString()}</span>
+            <span className="text-gray-500">
+              {new Date(interview.date).toLocaleDateString()}
+            </span>
           </div>
         </div>
-
-        {interview.status === "in-progress" && (
-          <Button
-            onClick={() => setActiveTab("final-assessment")}
-            className="mt-4 md:mt-0">
-            Complete Interview
-          </Button>
-        )}
       </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Candidate Information</CardTitle>
@@ -244,7 +275,9 @@ export default function InterviewSession({
                     </Badge>
                   </>
                 ) : (
-                  <span className="text-gray-500">No self analysis data available</span>
+                  <span className="text-gray-500">
+                    No self analysis data available
+                  </span>
                 )}
               </div>
             </div>
@@ -252,30 +285,36 @@ export default function InterviewSession({
               <p className="text-sm font-medium">Skills</p>
               <div className="flex flex-wrap gap-2 mt-1">
                 {interview.candidate.skills?.map((skill) => (
-                  <Badge
-                    key={skill}
-                    variant="outline">
+                  <Badge key={skill} variant="outline">
                     {skill}
                   </Badge>
-                )) || <span className="text-gray-500">No skills specified</span>}
+                )) || (
+                  <span className="text-gray-500">No skills specified</span>
+                )}
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-4">
           <TabsTrigger
             value="question-generator"
-            disabled={interview.status === "completed"}>
+            disabled={
+              interview.status === "completed" || completeInterviewClicked
+            }
+          >
             Question Generator
           </TabsTrigger>
           <TabsTrigger
             value="code-editor"
-            disabled={interview.questions.length === 0 || interview.status === "completed"}>
+            disabled={
+              interview.questions.length === 0 ||
+              interview.status === "completed" ||
+              completeInterviewClicked
+            }
+          >
             Code Editor
           </TabsTrigger>
           <TabsTrigger
@@ -283,11 +322,24 @@ export default function InterviewSession({
             disabled={
               interview.questions.length === 0 ||
               !interview.questions[activeQuestionIndex]?.candidateCode ||
-              interview.status === "completed"
-            }>
+              interview.status === "completed" ||
+              completeInterviewClicked
+            }
+          >
             AI Evaluation
           </TabsTrigger>
-          <TabsTrigger value="final-assessment">Final Assessment</TabsTrigger>
+          {(interview.status === "completed" || completeInterviewClicked) && (
+            <TabsTrigger value="final-assessment">Final Assessment</TabsTrigger>
+          )}
+          {!completeInterviewClicked && interview.status !== "completed" && (
+            <Button
+              onClick={() => setConfirmDialogOpen(true)}
+              variant="outline"
+              className="h-9 rounded-sm px-4"
+            >
+              Complete Interview
+            </Button>
+          )}
         </TabsList>
 
         <TabsContent value="question-generator">
@@ -344,6 +396,37 @@ export default function InterviewSession({
           />
         </TabsContent>
       </Tabs>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Complete Interview</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to complete this interview? This will take
+              you to the final assessment page where you can review and submit
+              the final evaluation.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setConfirmDialogOpen(false);
+                setCompleteInterviewClicked(true);
+                setActiveTab("final-assessment");
+              }}
+            >
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

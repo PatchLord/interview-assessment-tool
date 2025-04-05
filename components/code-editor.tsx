@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/use-toast";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -34,10 +35,15 @@ export default function CodeEditor({
   setActiveQuestionIndex,
   onUpdateQuestion,
 }: CodeEditorProps) {
-  const [code, setCode] = useState<string>(questions[activeQuestionIndex]?.candidateCode || "");
+  const [code, setCode] = useState<string>(
+    questions[activeQuestionIndex]?.candidateCode || ""
+  );
   const [notes, setNotes] = useState<string>(
     questions[activeQuestionIndex]?.interviewerNotes || ""
   );
+  const { toast } = useToast();
+  const [codeSaved, setCodeSaved] = useState<boolean>(false);
+  const [notesSaved, setNotesSaved] = useState<boolean>(false);
 
   // Update local state when active question changes
   useEffect(() => {
@@ -46,11 +52,41 @@ export default function CodeEditor({
   }, [activeQuestionIndex, questions]);
 
   const handleSaveCode = () => {
+    // Show visual feedback
+    setCodeSaved(true);
+
+    // Save the code
     onUpdateQuestion(activeQuestionIndex, { candidateCode: code });
+
+    // Try to show toast
+    toast({
+      title: "Success",
+      description: "Code saved successfully",
+    });
+
+    // Reset the visual feedback after 1.5 seconds
+    setTimeout(() => {
+      setCodeSaved(false);
+    }, 1500);
   };
 
   const handleSaveNotes = () => {
+    // Show visual feedback
+    setNotesSaved(true);
+
+    // Save the notes
     onUpdateQuestion(activeQuestionIndex, { interviewerNotes: notes });
+
+    // Try to show toast
+    toast({
+      title: "Success",
+      description: "Notes saved successfully",
+    });
+
+    // Reset the visual feedback after 1.5 seconds
+    setTimeout(() => {
+      setNotesSaved(false);
+    }, 1500);
   };
 
   const handlePreviousQuestion = () => {
@@ -73,7 +109,9 @@ export default function CodeEditor({
             <CardTitle>Code Editor</CardTitle>
             <div className="flex items-center space-x-2 mt-2 md:mt-0">
               <Badge>{questions[activeQuestionIndex].skill}</Badge>
-              <Badge variant="outline">{questions[activeQuestionIndex].difficulty}</Badge>
+              <Badge variant="outline">
+                {questions[activeQuestionIndex].difficulty}
+              </Badge>
             </div>
           </div>
         </CardHeader>
@@ -84,7 +122,8 @@ export default function CodeEditor({
                 variant="outline"
                 size="sm"
                 onClick={handlePreviousQuestion}
-                disabled={activeQuestionIndex === 0}>
+                disabled={activeQuestionIndex === 0}
+              >
                 <ChevronLeft className="h-4 w-4 mr-2" />
                 Previous Question
               </Button>
@@ -95,7 +134,8 @@ export default function CodeEditor({
                 variant="outline"
                 size="sm"
                 onClick={handleNextQuestion}
-                disabled={activeQuestionIndex === questions.length - 1}>
+                disabled={activeQuestionIndex === questions.length - 1}
+              >
                 Next Question
                 <ChevronRight className="h-4 w-4 ml-2" />
               </Button>
@@ -109,36 +149,22 @@ export default function CodeEditor({
               <TabsTrigger value="notes">Notes</TabsTrigger>
             </TabsList>
 
-            <TabsContent
-              value="question"
-              className="space-y-4">
+            <TabsContent value="question" className="space-y-4">
               <div className="p-4 border rounded-md bg-slate-50 dark:bg-slate-900 overflow-y-auto">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
                     p: ({ node, ...props }) => (
-                      <p
-                        className="mb-4"
-                        {...props}
-                      />
+                      <p className="mb-4" {...props} />
                     ),
                     h1: ({ node, ...props }) => (
-                      <h1
-                        className="text-2xl font-bold mb-4"
-                        {...props}
-                      />
+                      <h1 className="text-2xl font-bold mb-4" {...props} />
                     ),
                     h2: ({ node, ...props }) => (
-                      <h2
-                        className="text-xl font-bold mb-3"
-                        {...props}
-                      />
+                      <h2 className="text-xl font-bold mb-3" {...props} />
                     ),
                     h3: ({ node, ...props }) => (
-                      <h3
-                        className="text-lg font-bold mb-2"
-                        {...props}
-                      />
+                      <h3 className="text-lg font-bold mb-2" {...props} />
                     ),
                     pre: ({ node, ...props }) => (
                       <pre
@@ -164,32 +190,22 @@ export default function CodeEditor({
                         <code {...props} />
                       ),
                     ul: ({ node, ...props }) => (
-                      <ul
-                        className="list-disc pl-6 mb-4"
-                        {...props}
-                      />
+                      <ul className="list-disc pl-6 mb-4" {...props} />
                     ),
                     ol: ({ node, ...props }) => (
-                      <ol
-                        className="list-decimal pl-6 mb-4"
-                        {...props}
-                      />
+                      <ol className="list-decimal pl-6 mb-4" {...props} />
                     ),
                     li: ({ node, ...props }) => (
-                      <li
-                        className="mb-1"
-                        {...props}
-                      />
+                      <li className="mb-1" {...props} />
                     ),
-                  }}>
+                  }}
+                >
                   {questions[activeQuestionIndex].question}
                 </ReactMarkdown>
               </div>
             </TabsContent>
 
-            <TabsContent
-              value="code"
-              className="space-y-4">
+            <TabsContent value="code" className="space-y-4">
               <Textarea
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
@@ -198,14 +214,16 @@ export default function CodeEditor({
               />
               <Button
                 onClick={handleSaveCode}
-                className="w-full">
-                Save Code
+                className={`w-full ${
+                  codeSaved ? "bg-green-600 hover:bg-green-700" : ""
+                }`}
+                disabled={codeSaved}
+              >
+                {codeSaved ? "Saved!" : "Save Code"}
               </Button>
             </TabsContent>
 
-            <TabsContent
-              value="notes"
-              className="space-y-4">
+            <TabsContent value="notes" className="space-y-4">
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -214,8 +232,12 @@ export default function CodeEditor({
               />
               <Button
                 onClick={handleSaveNotes}
-                className="w-full">
-                Save Notes
+                className={`w-full ${
+                  notesSaved ? "bg-green-600 hover:bg-green-700" : ""
+                }`}
+                disabled={notesSaved}
+              >
+                {notesSaved ? "Saved!" : "Save Notes"}
               </Button>
             </TabsContent>
           </Tabs>

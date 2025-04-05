@@ -54,16 +54,16 @@ export default function FinalAssessment({
   onCompleteInterview,
 }: FinalAssessmentProps) {
   const [technicalProficiency, setTechnicalProficiency] = useState<number>(
-    interview.finalAssessment?.technicalProficiency || 5
+    interview.finalAssessment?.technicalProficiency || 0
   );
   const [problemSolving, setProblemSolving] = useState<number>(
-    interview.finalAssessment?.problemSolving || 5
+    interview.finalAssessment?.problemSolving || 0
   );
   const [codeQuality, setCodeQuality] = useState<number>(
-    interview.finalAssessment?.codeQuality || 5
+    interview.finalAssessment?.codeQuality || 0
   );
   const [overallScore, setOverallScore] = useState<number>(
-    interview.finalAssessment?.overallScore || 5
+    interview.finalAssessment?.overallScore || 0
   );
   const [strengths, setStrengths] = useState<string>(
     interview.finalAssessment?.strengths?.join("\n") || ""
@@ -76,6 +76,10 @@ export default function FinalAssessment({
   );
 
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [assessmentGenerated, setAssessmentGenerated] = useState<boolean>(
+    !!interview.finalAssessment
+  );
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const { toast } = useToast();
 
   // Calculate average scores from questions with AI evaluations
@@ -107,13 +111,13 @@ export default function FinalAssessment({
           ) / questionsWithEval.length
         );
 
-        setCodeQuality(avgCodeQuality || 5);
-        setTechnicalProficiency(avgTechnicalSkill || 5);
-        setProblemSolving(avgProblemUnderstanding || 5);
+        setCodeQuality(avgCodeQuality || 0);
+        setTechnicalProficiency(avgTechnicalSkill || 0);
+        setProblemSolving(avgProblemUnderstanding || 0);
         setOverallScore(
           Math.round(
             (avgCodeQuality + avgTechnicalSkill + avgProblemUnderstanding) / 3
-          ) || 5
+          ) || 0
         );
       }
     }
@@ -183,6 +187,62 @@ ${
       // Parse the assessment to extract information
       const assessmentText = data.assessment;
 
+      try {
+        // Extract JSON from markdown code block if present
+        const jsonMatch = assessmentText.match(/```json\s*([\s\S]*?)\s*```/);
+        let parsedAssessment;
+
+        if (jsonMatch && jsonMatch[1]) {
+          parsedAssessment = JSON.parse(jsonMatch[1]);
+        } else {
+          // Try parsing the entire response as JSON
+          try {
+            parsedAssessment = JSON.parse(assessmentText);
+          } catch (e) {
+            console.error("Failed to parse assessment as JSON:", e);
+          }
+        }
+
+        if (parsedAssessment && parsedAssessment.finalAssessment) {
+          const finalAssessment = parsedAssessment.finalAssessment;
+
+          // Update state with the parsed data
+          setTechnicalProficiency(finalAssessment.technicalProficiency || 0);
+          setProblemSolving(finalAssessment.problemSolvingApproach || 0);
+          setCodeQuality(finalAssessment.codeQualityAndEfficiency || 0);
+          setOverallScore(finalAssessment.overallScore || 0);
+
+          if (
+            finalAssessment.areasOfStrength &&
+            Array.isArray(finalAssessment.areasOfStrength)
+          ) {
+            setStrengths(finalAssessment.areasOfStrength.join("\n"));
+          }
+
+          if (
+            finalAssessment.areasForImprovement &&
+            Array.isArray(finalAssessment.areasForImprovement)
+          ) {
+            setAreasForImprovement(
+              finalAssessment.areasForImprovement.join("\n")
+            );
+          }
+
+          if (finalAssessment.summaryComments) {
+            setComments(finalAssessment.summaryComments);
+          }
+
+          toast({
+            title: "Success",
+            description: "Assessment generated successfully",
+          });
+          return;
+        }
+      } catch (parseError) {
+        console.error("Error parsing JSON assessment:", parseError);
+      }
+
+      // Fallback to regex parsing if JSON parsing fails
       // Extract strengths and areas for improvement
       const strengthsMatch = assessmentText.match(
         /Areas of Strength[:\s]+([\s\S]*?)(?=Areas for Improvement|$)/i
@@ -213,8 +273,8 @@ ${
         const strengthsList = strengthsMatch[1]
           .trim()
           .split(/\n|-/)
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0);
+          .map((s: string) => s.trim())
+          .filter((s: string) => s.length > 0);
         setStrengths(strengthsList.join("\n"));
       }
 
@@ -222,8 +282,8 @@ ${
         const areasList = areasForImprovementMatch[1]
           .trim()
           .split(/\n|-/)
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0);
+          .map((s: string) => s.trim())
+          .filter((s: string) => s.length > 0);
         setAreasForImprovement(areasList.join("\n"));
       }
 
@@ -264,46 +324,116 @@ ${
     }
   };
 
-  const handleCompleteInterview = () => {
-    const assessment = {
-      technicalProficiency,
-      problemSolving,
-      codeQuality,
-      overallScore,
-      strengths: strengths.split("\n").filter((s) => s.trim().length > 0),
-      areasForImprovement: areasForImprovement
-        .split("\n")
-        .filter((s) => s.trim().length > 0),
-      comments,
-    };
+  // Auto-generate assessment when component is loaded and interview is in-progress
+  useEffect(() => {
+    // Only generate assessment if:
+    // 1. Interview is in-progress
+    // 2. Assessment hasn't been generated yet in this session
+    // 3. There's no existing finalAssessment in the interview data
+    // 4. There are questions with AI evaluations
+    if (
+      interview.status === "in-progress" &&
+      !assessmentGenerated &&
+      !interview.finalAssessment &&
+      interview.questions.length > 0
+    ) {
+      // Check if at least one question has an AI evaluation
+      const hasEvaluations = interview.questions.some((q) => q.aiEvaluation);
+      
+      if (hasEvaluations) {
+        handleGenerateAssessment();
+        setAssessmentGenerated(true);
+      }
+    }
+  }, [
+    interview.status,
+    assessmentGenerated,
+    interview.questions,
+    interview.finalAssessment,
+    handleGenerateAssessment,
+  ]);
 
-    onCompleteInterview(assessment);
+  const handleCompleteInterview = async () => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      const assessment = {
+        technicalProficiency,
+        problemSolving,
+        codeQuality,
+        overallScore,
+        strengths: strengths.split("\n").filter((s) => s.trim().length > 0),
+        areasForImprovement: areasForImprovement
+          .split("\n")
+          .filter((s) => s.trim().length > 0),
+        comments,
+      };
+      
+      // Call the onCompleteInterview function to store the assessment
+      await onCompleteInterview(assessment);
+      
+      toast({
+        title: "Success",
+        description: "Final assessment submitted successfully",
+      });
+    } catch (error) {
+      console.error("Error submitting final assessment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit final assessment",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Final Assessment</CardTitle>
+        <CardHeader className="pb-3">
+          <div className="flex justify-between items-center">
+            <CardTitle>Final Assessment</CardTitle>
+            {interview.status === "in-progress" && (
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleGenerateAssessment}
+                  variant="outline"
+                  disabled={isGenerating || interview.questions.length === 0}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    "Regenerate Assessment"
+                  )}
+                </Button>
+                <Button
+                  onClick={handleCompleteInterview}
+                  disabled={isSubmitting}
+                >
+                  Submit Final Assessment
+                </Button>
+              </div>
+            )}
+          </div>
+          {interview.status === "in-progress" && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Review and edit the AI-generated assessment before submitting. All
+              fields are editable.
+            </p>
+          )}
+          {interview.status === "completed" && (
+            <p className="text-sm text-muted-foreground mt-2">
+              This interview has been completed and the assessment is finalized.
+            </p>
+          )}
         </CardHeader>
         <CardContent className="space-y-6">
-          {interview.status === "in-progress" && (
-            <Button
-              onClick={handleGenerateAssessment}
-              disabled={isGenerating || interview.questions.length === 0}
-              className="w-full"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Generating Assessment...
-                </>
-              ) : (
-                "Generate AI Assessment"
-              )}
-            </Button>
-          )}
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div className="space-y-2">
@@ -431,12 +561,6 @@ ${
               disabled={interview.status === "completed"}
             />
           </div>
-
-          {interview.status === "in-progress" && (
-            <Button onClick={handleCompleteInterview} className="w-full">
-              Complete Interview
-            </Button>
-          )}
         </CardContent>
       </Card>
     </div>
