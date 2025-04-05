@@ -39,23 +39,23 @@ export default function CandidatesPage() {
         <h1 className="text-3xl font-bold">Candidates</h1>
         <AddCandidateButton onSuccess={handleRefresh} />
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>{candidates.length > 0 ? "My Candidates" : "No Candidates Found"}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-4">
-              <div className="animate-pulse text-gray-500">Loading candidates...</div>
-            </div>
-          ) : (
+      {isLoading ? (
+        <div className="flex justify-center py-20">
+          <div className="animate-pulse text-gray-500 ">Loading candidates...</div>
+        </div>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>{candidates.length > 0 ? "My Candidates" : "No Candidates Found"}</CardTitle>
+          </CardHeader>
+          <CardContent>
             <CandidatesList
               candidates={candidates}
               refreshTrigger={refreshTrigger}
             />
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -48,25 +48,25 @@ export default function InterviewersPage() {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {interviewers.length > 0 ? "All Interviewers" : "No Interviewers Found"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-4">
-              <div className="animate-pulse text-gray-500">Loading interviewers...</div>
-            </div>
-          ) : (
+      {isLoading ? (
+        <div className="flex justify-center py-20">
+          <div className="animate-pulse text-gray-500">Loading interviewers...</div>
+        </div>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {interviewers.length > 0 ? "All Interviewers" : "No Interviewers Found"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <InterviewersList
               interviewers={interviewers}
               refreshTrigger={refreshTrigger}
             />
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog
         open={open}

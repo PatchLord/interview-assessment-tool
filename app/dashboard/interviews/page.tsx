@@ -39,23 +39,25 @@ export default function InterviewsPage() {
         <h1 className="text-3xl font-bold">Interviews</h1>
         <StartInterviewButton onSuccess={handleRefresh} />
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>{interviews.length > 0 ? "All Interviews" : "No Interviews Found"}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-4">
-              <div className="animate-pulse text-gray-500">Loading interviews...</div>
-            </div>
-          ) : (
+      {isLoading ? (
+        <div className="flex justify-center py-20">
+          <div className="animate-pulse text-gray-500">Loading interviews...</div>
+        </div>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {interviews.length > 0 ? "All Interviews" : "No Interviews Found"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <InterviewsList
               interviews={interviews}
               refreshTrigger={refreshTrigger}
             />
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
