@@ -6,7 +6,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 // Get all candidates (filtered by role)
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -15,6 +15,12 @@ export async function GET() {
 
     await connectToDatabase();
 
+    // Return all candidates regardless of user role
+    const candidates = await Candidate.find().sort({ createdAt: -1 });
+    return NextResponse.json(candidates);
+
+    // The code below is commented out as we now want to return all candidates
+    /*
     // If user is admin, return all candidates
     if (session.user.role === "admin") {
       const candidates = await Candidate.find().sort({ createdAt: -1 });
@@ -31,7 +37,11 @@ export async function GET() {
         .lean();
 
       // Extract unique candidate IDs
-      const candidateIds = [...new Set(interviews.map((interview) => interview.candidate))];
+      const candidateIds = [
+        ...new Set(interviews.map((interview) => interview.candidate)),
+      ];
+
+      console.log("Candidate IDs:", candidateIds);
 
       // Get only those candidates
       const candidates = await Candidate.find({
@@ -42,9 +52,13 @@ export async function GET() {
     }
 
     return NextResponse.json([]);
+    */
   } catch (error) {
     console.error("Error fetching candidates:", error);
-    return NextResponse.json({ error: "Failed to fetch candidates" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch candidates" },
+      { status: 500 }
+    );
   }
 }
 
@@ -56,10 +70,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { name, email, position, skills, selfAnalysis, resumeUrl, interviewLevel } =
-      await request.json();
+    const {
+      name,
+      email,
+      position,
+      skills,
+      selfAnalysis,
+      resumeUrl,
+      interviewLevel,
+    } = await request.json();
     if (!name || !email || !position || !skills || !interviewLevel) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
     // Connection is already established at application startup
@@ -75,6 +99,9 @@ export async function POST(request: Request) {
     await newCandidate.save();
     return NextResponse.json(newCandidate, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to create candidate" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to create candidate" },
+      { status: 500 }
+    );
   }
 }
