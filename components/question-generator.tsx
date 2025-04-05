@@ -64,7 +64,9 @@ export default function QuestionGenerator({
       }
 
       const data = await response.json();
-      setGeneratedQuestion(data.question);
+      // Extract question content, removing surrounding backticks if present
+      const questionText = data.question.replace(/^```(markdown)?|```$/g, "").trim();
+      setGeneratedQuestion(questionText);
     } catch (error) {
       toast({
         title: "Error",

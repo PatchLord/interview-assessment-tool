@@ -58,9 +58,15 @@ The question should:
 5. Include input/output examples
 6. Be in a LeetCode-style format
 
-If the output format is markdown, use markdown formatting with proper headings, code blocks, and formatting.
-Use ## for section headings like "Problem Statement", "Examples", "Constraints", etc.
-Use \`\`\` code blocks for sample code and examples.
+Generate the output in proper markdown format:
+- Use ## for section headings like "Problem Statement", "Examples", "Constraints", etc.
+- Use \`\`\` for code blocks, specifying the language (e.g. \`\`\`javascript)
+- Use regular markdown syntax for text formatting (* for italics, ** for bold)
+- Use proper markdown lists (- or * for bullet points, 1. for numbered lists)
+- Maintain a clean, structured format with proper spacing between sections
+- Include informative examples with proper code formatting
+
+Format the question in a structured way with sections for Problem Statement, Examples, Constraints, and Expected Solution.
 
 Question:
 `;
