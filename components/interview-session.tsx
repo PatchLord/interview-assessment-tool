@@ -100,17 +100,11 @@ export default function InterviewSession({
     };
 
     // Add event listener
-    window.addEventListener(
-      "navigateToTab",
-      handleTabNavigation as EventListener
-    );
+    window.addEventListener("navigateToTab", handleTabNavigation as EventListener);
 
     // Clean up
     return () => {
-      window.removeEventListener(
-        "navigateToTab",
-        handleTabNavigation as EventListener
-      );
+      window.removeEventListener("navigateToTab", handleTabNavigation as EventListener);
     };
   }, []);
 
@@ -335,14 +329,14 @@ export default function InterviewSession({
             AI Evaluation
           </TabsTrigger>
           <TabsTrigger value="final-assessment">Final Assessment</TabsTrigger>
-          {!completeInterviewClicked && interview.status !== "completed" && (
+          {/* {!completeInterviewClicked && interview.status !== "completed" && (
             <Button
               onClick={() => setConfirmDialogOpen(true)}
               variant="outline"
               className="h-9 rounded-sm px-4">
               Complete Interview
             </Button>
-          )}
+          )} */}
         </TabsList>
 
         <TabsContent value="question-generator">

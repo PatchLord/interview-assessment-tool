@@ -1,17 +1,16 @@
 "use client";
-
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { AlertCircle, ArrowRight, Calendar, Check, Clock, Eye, User } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -60,7 +59,6 @@ export default function InterviewsList({
         console.error("Failed to refresh interviews:", error);
       }
     };
-
     if (typeof window !== "undefined" && refreshTrigger) {
       fetchInterviews();
     }
@@ -82,152 +80,148 @@ export default function InterviewsList({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4">
-      {interviews.map((interview) => (
-        <Card
-          key={interview._id}
-          className={`overflow-hidden transition-all hover:shadow-md ${
-            interview.status === "completed" ? "hover:border-green-200" : "hover:border-blue-200"
-          }`}>
-          <CardHeader className="py-4">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10 bg-primary/10">
-                  <AvatarFallback className="font-semibold text-primary">
-                    {interview.candidate.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                      .toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <CardTitle className="text-lg">{interview.candidate.name}</CardTitle>
-                  <CardDescription className="text-xs">
-                    <div className="flex items-center mt-1 gap-2">
-                      <Badge
-                        variant="outline"
-                        className="font-normal text-xs">
-                        {interview.candidate.position}
-                      </Badge>
-                      <span className="text-muted-foreground">•</span>
-                      <Badge
-                        variant="outline"
-                        className="font-normal text-xs">
-                        {interview.candidate.interviewLevel} Level
-                      </Badge>
+    <div className="rounded-md border overflow-auto">
+      <div className="min-w-max">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Candidate</TableHead>
+              <TableHead>Interviewer</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Progress</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {interviews.map((interview) => (
+              <TableRow
+                key={interview._id}
+                className="hover:bg-muted/50">
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8 bg-primary/10">
+                      <AvatarFallback className="font-semibold text-primary text-sm">
+                        {interview.candidate.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">{interview.candidate.name}</div>
+                      <div className="flex items-center mt-1 gap-2">
+                        <Badge
+                          variant="outline"
+                          className="font-normal text-xs">
+                          {interview.candidate.position}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">•</span>
+                        <span className="text-xs text-muted-foreground">
+                          {interview.candidate.interviewLevel} Level
+                        </span>
+                      </div>
                     </div>
-                  </CardDescription>
-                </div>
-              </div>
-
-              <div>
-                <Badge
-                  variant={interview.status === "completed" ? "success" : "secondary"}
-                  className="gap-1">
-                  {interview.status === "completed" ? (
-                    <>
-                      <Check className="h-3 w-3" />
-                      Completed
-                    </>
-                  ) : (
-                    <>
-                      <Clock className="h-3 w-3" />
-                      In Progress
-                    </>
-                  )}
-                </Badge>
-
-                {interview.status === "completed" && interview.finalAssessment && (
-                  <div className="mt-2">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                      <span>Overall Score</span>
-                      <span className="font-medium">
-                        {interview.finalAssessment.overallScore}/10
-                      </span>
-                    </div>
-                    <Progress
-                      value={interview.finalAssessment.overallScore * 10}
-                      className="h-1.5"
-                    />
                   </div>
-                )}
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="py-2 px-6">
-            <div className="flex flex-col md:flex-row justify-between gap-4">
-              <div className="md:flex-1">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                  <User className="h-4 w-4" />
-                  <span>Interviewer:</span>
-                  <span className="font-medium text-foreground">
-                    {interview.interviewer?.name || "N/A"}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>Date:</span>
-                  <span className="font-medium text-foreground">
-                    {new Date(interview.date).toLocaleDateString(undefined, {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </span>
-                </div>
-              </div>
-
-              <div className="md:flex-1">
-                {interview.questions.length > 0 ? (
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-1">Questions Progress:</div>
-                    <div className="flex items-center gap-2">
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2 text-sm">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span>{interview.interviewer?.name || "N/A"}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span>
+                      {new Date(interview.date).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    variant={interview.status === "completed" ? "success" : "secondary"}
+                    className="gap-1">
+                    {interview.status === "completed" ? (
+                      <>
+                        <Check className="h-3 w-3" />
+                        Completed
+                      </>
+                    ) : (
+                      <>
+                        <Clock className="h-3 w-3" />
+                        In Progress
+                      </>
+                    )}
+                  </Badge>
+                  {interview.status === "completed" && interview.finalAssessment && (
+                    <div className="mt-2 w-28">
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-muted-foreground">Score</span>
+                        <span className="font-medium">
+                          {interview.finalAssessment.overallScore}/10
+                        </span>
+                      </div>
                       <Progress
-                        value={
-                          (interview.questions.filter((q) => q.candidateCode).length /
-                            interview.questions.length) *
-                          100
-                        }
-                        className="h-2 flex-1"
+                        value={interview.finalAssessment.overallScore * 10}
+                        className="h-1.5"
                       />
-                      <span className="text-xs font-medium">
-                        {interview.questions.filter((q) => q.candidateCode).length}/
-                        {interview.questions.length}
-                      </span>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-sm text-muted-foreground">No questions added yet</div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-
-          <CardFooter className="flex justify-end pt-4 border-t mt-2">
-            <Link href={`/dashboard/interviews/${interview._id}`}>
-              <Button
-                variant={interview.status === "completed" ? "outline" : "default"}
-                size="sm"
-                className="gap-1">
-                {interview.status === "in-progress" ? (
-                  <>
-                    Continue Interview
-                    <ArrowRight className="h-4 w-4 ml-1" />
-                  </>
-                ) : (
-                  <>
-                    View Details
-                    <Eye className="h-4 w-4 ml-1" />
-                  </>
-                )}
-              </Button>
-            </Link>
-          </CardFooter>
-        </Card>
-      ))}
+                  )}
+                </TableCell>
+                <TableCell>
+                  {interview.questions.length > 0 ? (
+                    <div className="w-36">
+                      <div className="text-sm text-muted-foreground mb-1">Questions:</div>
+                      <div className="flex items-center gap-2">
+                        <Progress
+                          value={
+                            (interview.questions.filter((q) => q.candidateCode).length /
+                              interview.questions.length) *
+                            100
+                          }
+                          className="h-2 flex-1"
+                        />
+                        <span className="text-xs font-medium whitespace-nowrap">
+                          {interview.questions.filter((q) => q.candidateCode).length}/
+                          {interview.questions.length}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">No questions added</div>
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Link href={`/dashboard/interviews/${interview._id}`}>
+                    <Button
+                      variant={interview.status === "completed" ? "outline" : "default"}
+                      size="sm"
+                      className="gap-1 whitespace-nowrap">
+                      {interview.status === "in-progress" ? (
+                        <>
+                          Continue
+                          <ArrowRight className="h-4 w-4" />
+                        </>
+                      ) : (
+                        <>
+                          View Details
+                          <Eye className="h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
+                  </Link>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
