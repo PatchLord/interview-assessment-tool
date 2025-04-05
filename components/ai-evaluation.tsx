@@ -4,8 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, PlusCircle, MessageSquare } from "lucide-react";
 import { useState } from "react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Badge } from "./ui/badge";
 
 interface Question {
   skill: string;
@@ -39,6 +46,9 @@ export default function AIEvaluation({
   onUpdateQuestion,
 }: AIEvaluationProps) {
   const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
+  const [isGeneratingFollowUp, setIsGeneratingFollowUp] =
+    useState<boolean>(false);
+  const [followUpQuestions, setFollowUpQuestions] = useState<any[]>([]);
   const { toast } = useToast();
 
   // Function to parse JSON from feedback string with markdown code blocks
@@ -65,7 +75,12 @@ export default function AIEvaluation({
           // Parse the extracted JSON string
           return JSON.parse(jsonString);
         } catch (parseError) {
-          console.error("JSON parse error:", parseError, "for string:", jsonString);
+          console.error(
+            "JSON parse error:",
+            parseError,
+            "for string:",
+            jsonString
+          );
 
           // Attempt to clean the string further and retry parsing
           const cleanedJson = jsonString
@@ -78,7 +93,10 @@ export default function AIEvaluation({
           try {
             return JSON.parse(cleanedJson);
           } catch (retryError) {
-            console.error("Failed to parse JSON even after cleaning:", retryError);
+            console.error(
+              "Failed to parse JSON even after cleaning:",
+              retryError
+            );
             return null;
           }
         }
@@ -212,6 +230,102 @@ export default function AIEvaluation({
     }
   };
 
+  const handleGenerateFollowUp = async () => {
+    if (!question.candidateCode || !question.aiEvaluation?.feedback) {
+      toast({
+        title: "Error",
+        description:
+          "Code and evaluation are required to generate follow-up questions",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingFollowUp(true);
+
+    try {
+      const response = await fetch("/api/ai/generate-follow-up", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question: question.question,
+          code: question.candidateCode,
+          evaluation: question.aiEvaluation.feedback,
+          skills: [question.skill, ...candidateSkills],
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate follow-up questions");
+      }
+
+      const data = await response.json();
+
+      if (data.followUpQuestions && Array.isArray(data.followUpQuestions)) {
+        setFollowUpQuestions(data.followUpQuestions);
+        toast({
+          title: "Success",
+          description: "Follow-up questions generated successfully",
+        });
+      } else {
+        // Try to parse from raw response if the API didn't parse it correctly
+        try {
+          const rawData = data.raw || "";
+
+          // Check if the raw data is wrapped in markdown code blocks
+          const jsonMatch = rawData.match(/```json\s*([\s\S]*?)\s*```/);
+          let jsonString = rawData;
+
+          if (jsonMatch && jsonMatch[1]) {
+            // Extract the JSON from the markdown code block
+            jsonString = jsonMatch[1];
+          }
+
+          const parsedData = JSON.parse(jsonString);
+
+          if (
+            parsedData.followUpQuestions &&
+            Array.isArray(parsedData.followUpQuestions)
+          ) {
+            setFollowUpQuestions(parsedData.followUpQuestions);
+            toast({
+              title: "Success",
+              description: "Follow-up questions generated successfully",
+            });
+          } else {
+            throw new Error("Invalid follow-up questions format");
+          }
+        } catch (error) {
+          console.error("Error parsing follow-up questions:", error);
+          toast({
+            title: "Warning",
+            description:
+              "Follow-up questions generated but format was unexpected",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error generating follow-up questions:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate follow-up questions",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingFollowUp(false);
+    }
+  };
+
+  const handleNavigateToQuestionGenerator = () => {
+    // This will be handled by the parent component
+    const event = new CustomEvent("navigateToTab", {
+      detail: { tab: "question-generator" },
+    });
+    window.dispatchEvent(event);
+  };
+
   const parsedData = parseJsonFromFeedback(question?.aiEvaluation?.feedback);
 
   return (
@@ -225,7 +339,8 @@ export default function AIEvaluation({
             <Button
               onClick={handleGenerateEvaluation}
               disabled={isEvaluating || !question.candidateCode}
-              className="flex-1">
+              className="flex-1"
+            >
               {isEvaluating ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -254,7 +369,9 @@ export default function AIEvaluation({
                       value={parsedData?.summary.correctness}
                       className="h-2"
                     />
-                    <span className="font-bold">{parsedData?.summary.correctness}%</span>
+                    <span className="font-bold">
+                      {parsedData?.summary.correctness}%
+                    </span>
                   </div>
                 </div>
 
@@ -265,7 +382,9 @@ export default function AIEvaluation({
                       value={parsedData?.summary.code_quality}
                       className="h-2"
                     />
-                    <span className="font-bold">{parsedData?.summary.code_quality}%</span>
+                    <span className="font-bold">
+                      {parsedData?.summary.code_quality}%
+                    </span>
                   </div>
                 </div>
 
@@ -276,7 +395,9 @@ export default function AIEvaluation({
                       value={parsedData?.summary.edge_case_handling}
                       className="h-2"
                     />
-                    <span className="font-bold">{parsedData?.summary.edge_case_handling}%</span>
+                    <span className="font-bold">
+                      {parsedData?.summary.edge_case_handling}%
+                    </span>
                   </div>
                 </div>
 
@@ -287,7 +408,9 @@ export default function AIEvaluation({
                       value={parsedData?.summary.overall_rating}
                       className="h-2"
                     />
-                    <span className="font-bold">{parsedData?.summary.overall_rating}%</span>
+                    <span className="font-bold">
+                      {parsedData?.summary.overall_rating}%
+                    </span>
                   </div>
                 </div>
               </div>
@@ -300,6 +423,69 @@ export default function AIEvaluation({
                   </p>
                 </div>
               </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col md:flex-row gap-4 mt-6">
+                <Button
+                  onClick={handleNavigateToQuestionGenerator}
+                  className="flex items-center gap-2"
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  Generate New Question
+                </Button>
+
+                <Button
+                  onClick={handleGenerateFollowUp}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                  disabled={isGeneratingFollowUp}
+                >
+                  {isGeneratingFollowUp ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <MessageSquare className="h-4 w-4" />
+                      Generate Follow-up Questions
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Follow-up Questions Section */}
+              {followUpQuestions.length > 0 && (
+                <div className="mt-6 space-y-4">
+                  <h3 className="text-lg font-medium">Follow-up Questions</h3>
+                  <Accordion type="single" collapsible className="w-full">
+                    {followUpQuestions.map((q, idx) => (
+                      <AccordionItem key={idx} value={`item-${idx}`}>
+                        <AccordionTrigger className="text-left">
+                          <div className="flex items-start gap-2">
+                            <span className="font-medium">
+                              {idx + 1}. {q.question.split("?")[0]}?
+                            </span>
+                            <Badge variant="outline" className="ml-2">
+                              {q.difficulty}
+                            </Badge>
+                            <Badge variant="secondary" className="ml-2">
+                              {q.focus}
+                            </Badge>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-md mt-2">
+                            <p className="text-gray-700 dark:text-gray-300">
+                              {q.question}
+                            </p>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </div>
+              )}
             </div>
           )}
 
@@ -309,7 +495,9 @@ export default function AIEvaluation({
               <p className="text-center text-gray-500">
                 Analyzing code and generating evaluation...
               </p>
-              <p className="text-center text-gray-500 text-sm">This may take a minute or two</p>
+              <p className="text-center text-gray-500 text-sm">
+                This may take a minute or two
+              </p>
             </div>
           )}
         </CardContent>

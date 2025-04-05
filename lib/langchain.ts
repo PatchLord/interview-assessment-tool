@@ -168,10 +168,54 @@ give me only json object as final response
 
 `;
 
+/**
+ * Template for generating follow-up questions
+ */
+const FOLLOW_UP_QUESTION_TEMPLATE = `
+You are an expert technical interviewer conducting a coding interview. Based on the candidate's solution to a previous question, generate relevant follow-up questions.
+
+PREVIOUS QUESTION: {question}
+
+CANDIDATE'S CODE SOLUTION: {code}
+
+EVALUATION: {evaluation}
+
+SKILLS BEING ASSESSED: {skills}
+
+Generate 3 follow-up questions that:
+1. Probe deeper into the candidate's understanding of their solution
+2. Address any weaknesses or areas for improvement in their code
+3. Explore related concepts or optimizations
+
+If the code has issues, ask about those issues and how they would fix them.
+If the code is good, ask about optimizations, alternative approaches, or edge cases.
+If there are related concepts, ask about those to assess breadth of knowledge.
+
+
+Return the response in this JSON format:
+
+  "followUpQuestions": [
+    
+      "question": "Detailed question text here",
+      "focus": "Brief description of what this question is testing (e.g., 'Edge case handling', 'Optimization', 'Conceptual understanding')",
+      "difficulty": "Easy|Medium|Hard"
+    
+    // Additional questions...
+  ]
+
+`;
+
 // Create prompt templates
 const questionGenerationPrompt = PromptTemplate.fromTemplate(QUESTION_TEMPLATE);
-const codeEvaluationPrompt = PromptTemplate.fromTemplate(CODE_EVALUATION_TEMPLATE);
-const finalAssessmentPrompt = PromptTemplate.fromTemplate(FINAL_ASSESSMENT_TEMPLATE);
+const codeEvaluationPrompt = PromptTemplate.fromTemplate(
+  CODE_EVALUATION_TEMPLATE
+);
+const finalAssessmentPrompt = PromptTemplate.fromTemplate(
+  FINAL_ASSESSMENT_TEMPLATE
+);
+const followUpQuestionPrompt = PromptTemplate.fromTemplate(
+  FOLLOW_UP_QUESTION_TEMPLATE
+);
 
 // =========================================================================
 // Service Functions
@@ -221,7 +265,11 @@ export async function generateQuestion(
  * @param skills - Skills being assessed
  * @returns Detailed evaluation of the code
  */
-export async function evaluateCode(question: string, code: string, skills: string[]) {
+export async function evaluateCode(
+  question: string,
+  code: string,
+  skills: string[]
+) {
   try {
     validateEnvVars();
 
@@ -286,7 +334,11 @@ export async function generateFinalAssessment(
  * @param skills - Skills being assessed
  * @returns Streaming response of the evaluation
  */
-export async function streamEvaluation(question: string, code: string, skills: string[]) {
+export async function streamEvaluation(
+  question: string,
+  code: string,
+  skills: string[]
+) {
   try {
     validateEnvVars();
 
@@ -302,6 +354,42 @@ export async function streamEvaluation(question: string, code: string, skills: s
     return LangChainAdapter.toDataStreamResponse(stream);
   } catch (error) {
     console.error("Error streaming evaluation:", error);
+    throw error;
+  }
+}
+
+/**
+ * Generates follow-up questions based on the candidate's code and previous question
+ *
+ * @param question - The original coding question
+ * @param code - Candidate's code solution
+ * @param evaluation - AI evaluation of the code
+ * @param skills - Skills being assessed
+ * @returns JSON object with follow-up questions
+ */
+export async function generateFollowUpQuestions(
+  question: string,
+  code: string,
+  evaluation: string,
+  skills: string[]
+) {
+  try {
+    validateEnvVars();
+
+    const model = createModel();
+    const parser = new StringOutputParser();
+    const chain = followUpQuestionPrompt.pipe(model).pipe(parser);
+
+    const result = await chain.invoke({
+      question,
+      code,
+      evaluation,
+      skills: skills.join(", "),
+    });
+
+    return result;
+  } catch (error) {
+    console.error("Error generating follow-up questions:", error);
     throw error;
   }
 }
