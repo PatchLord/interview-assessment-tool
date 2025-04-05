@@ -1,52 +1,59 @@
+"use client";
+
 import InterviewsList from "@/components/interviews-list";
 import StartInterviewButton from "@/components/start-interview-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { authOptions } from "@/lib/auth";
-import Candidate from "@/lib/models/candidate"; // Import Candidate model
-import Interview from "@/lib/models/interview";
-import connectToDatabase from "@/lib/mongodb";
-import { getServerSession } from "next-auth";
+import { useEffect, useState } from "react";
 
-async function getInterviews() {
-  await connectToDatabase();
+export default function InterviewsPage() {
+  const [interviews, setInterviews] = useState([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Ensure Candidate model is registered before populating
-  // This line doesn't do anything directly, but ensures the model is loaded
-  await Candidate.findOne()
-    .exec()
-    .catch(() => null);
+  useEffect(() => {
+    const fetchInterviews = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/interviews");
+        if (response.ok) {
+          const data = await response.json();
+          setInterviews(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch interviews:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const session = await getServerSession(authOptions);
+    fetchInterviews();
+  }, [refreshTrigger]);
 
-  // If admin, get all interviews, otherwise get only interviews conducted by the user
-  const query = session?.user?.role === "admin" ? {} : { interviewer: session?.user?.id };
-
-  const interviews = await Interview.find(query)
-    .populate("candidate")
-    .populate("interviewer", "-password")
-    .sort({ date: -1 })
-    .lean();
-
-  // Properly serialize MongoDB objects to plain JavaScript objects
-  return JSON.parse(JSON.stringify(interviews));
-}
-
-export default async function InterviewsPage() {
-  const interviews = await getInterviews();
+  const handleRefresh = () => {
+    setRefreshTrigger((prev) => prev + 1);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Interviews</h1>
-        <StartInterviewButton />
+        <StartInterviewButton onSuccess={handleRefresh} />
       </div>
-
       <Card>
         <CardHeader>
-          <CardTitle>All Interviews</CardTitle>
+          <CardTitle>{interviews.length > 0 ? "All Interviews" : "No Interviews Found"}</CardTitle>
         </CardHeader>
         <CardContent>
-          <InterviewsList interviews={interviews} />
+          {isLoading ? (
+            <div className="flex justify-center py-4">
+              <div className="animate-pulse text-gray-500">Loading interviews...</div>
+            </div>
+          ) : (
+            <InterviewsList
+              interviews={interviews}
+              refreshTrigger={refreshTrigger}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

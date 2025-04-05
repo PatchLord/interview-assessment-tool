@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Eye } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 interface Candidate {
   _id: string;
@@ -19,7 +20,37 @@ interface Candidate {
   createdAt: string;
 }
 
-export default function CandidatesList({ candidates }: { candidates: Candidate[] }) {
+interface CandidatesListProps {
+  candidates: Candidate[];
+  refreshTrigger?: number;
+}
+
+export default function CandidatesList({
+  candidates: initialCandidates,
+  refreshTrigger,
+}: CandidatesListProps) {
+  const [candidates, setCandidates] = useState<Candidate[]>(initialCandidates);
+
+  // This effect will run whenever refreshTrigger changes, forcing a refresh of data
+  useEffect(() => {
+    const fetchCandidates = async () => {
+      try {
+        const response = await fetch("/api/candidates");
+        if (response.ok) {
+          const data = await response.json();
+          setCandidates(data);
+        }
+      } catch (error) {
+        console.error("Failed to refresh candidates:", error);
+      }
+    };
+
+    // Only fetch if we're in the browser and have a refreshTrigger
+    if (typeof window !== "undefined" && refreshTrigger) {
+      fetchCandidates();
+    }
+  }, [refreshTrigger]);
+
   return (
     <div className="space-y-4">
       {candidates.length > 0 ? (
@@ -38,7 +69,6 @@ export default function CandidatesList({ candidates }: { candidates: Candidate[]
                   <Badge variant="outline">{candidate.interviewLevel} Level</Badge>
                 </div>
               </div>
-
               <div className="mt-4 md:mt-0">
                 <div className="flex items-center text-sm text-gray-500 mb-2">
                   <Calendar className="h-4 w-4 mr-1" />
@@ -54,7 +84,6 @@ export default function CandidatesList({ candidates }: { candidates: Candidate[]
                 </Link>
               </div>
             </div>
-
             <div className="mt-4">
               <p className="text-sm font-medium mb-1">Skills:</p>
               <div className="flex flex-wrap gap-2">
@@ -67,7 +96,6 @@ export default function CandidatesList({ candidates }: { candidates: Candidate[]
                 ))}
               </div>
             </div>
-
             <div className="mt-2">
               <p className="text-sm font-medium mb-1">Self Analysis:</p>
               <div className="flex gap-2">

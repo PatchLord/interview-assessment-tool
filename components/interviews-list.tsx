@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Eye, User } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 interface Interview {
   _id: string;
@@ -24,7 +25,37 @@ interface Interview {
   };
 }
 
-export default function InterviewsList({ interviews }: { interviews: Interview[] }) {
+interface InterviewsListProps {
+  interviews: Interview[];
+  refreshTrigger?: number;
+}
+
+export default function InterviewsList({
+  interviews: initialInterviews,
+  refreshTrigger,
+}: InterviewsListProps) {
+  const [interviews, setInterviews] = useState<Interview[]>(initialInterviews);
+
+  // This effect will run whenever refreshTrigger changes, forcing a refresh of data
+  useEffect(() => {
+    const fetchInterviews = async () => {
+      try {
+        const response = await fetch("/api/interviews");
+        if (response.ok) {
+          const data = await response.json();
+          setInterviews(data);
+        }
+      } catch (error) {
+        console.error("Failed to refresh interviews:", error);
+      }
+    };
+
+    // Only fetch if we're in the browser and have a refreshTrigger
+    if (typeof window !== "undefined" && refreshTrigger) {
+      fetchInterviews();
+    }
+  }, [refreshTrigger]);
+
   return (
     <div className="space-y-4">
       {interviews.length > 0 ? (

@@ -31,6 +31,9 @@ interface FormData {
 }
 
 const SKILLS = [
+  "HTML",
+  "CSS",
+  "JavaScript",
   "React.js",
   "Next.js",
   "Node.js",
@@ -203,7 +206,7 @@ export default function AddCandidateForm({ onSuccess }: { onSuccess: () => void 
                   step={1}
                   defaultValue={[field.value]}
                   onValueChange={(values) => field.onChange(values[0])}
-                  className="w-full"
+                  className="w-full cursor-pointer"
                 />
               )}
             />
@@ -234,7 +237,7 @@ export default function AddCandidateForm({ onSuccess }: { onSuccess: () => void 
                   step={1}
                   defaultValue={[field.value]}
                   onValueChange={(values) => field.onChange(values[0])}
-                  className="w-full"
+                  className="w-full cursor-pointer"
                 />
               )}
             />

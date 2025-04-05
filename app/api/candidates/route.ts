@@ -1,9 +1,11 @@
 import { authOptions } from "@/lib/auth";
 import Candidate from "@/lib/models/candidate";
+import Interview from "@/lib/models/interview"; // Add import for Interview model
+import connectToDatabase from "@/lib/mongodb";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
-// Get all candidates
+// Get all candidates (filtered by role)
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -11,10 +13,37 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Connection is already established at application startup
-    const candidates = await Candidate.find().sort({ createdAt: -1 });
-    return NextResponse.json(candidates);
+    await connectToDatabase();
+
+    // If user is admin, return all candidates
+    if (session.user.role === "admin") {
+      const candidates = await Candidate.find().sort({ createdAt: -1 });
+      return NextResponse.json(candidates);
+    }
+
+    // For interviewers, only return candidates they've interviewed
+    if (session.user.id) {
+      // Find all interviews conducted by this interviewer
+      const interviews = await Interview.find({
+        interviewer: session.user.id,
+      })
+        .select("candidate")
+        .lean();
+
+      // Extract unique candidate IDs
+      const candidateIds = [...new Set(interviews.map((interview) => interview.candidate))];
+
+      // Get only those candidates
+      const candidates = await Candidate.find({
+        _id: { $in: candidateIds },
+      }).sort({ createdAt: -1 });
+
+      return NextResponse.json(candidates);
+    }
+
+    return NextResponse.json([]);
   } catch (error) {
+    console.error("Error fetching candidates:", error);
     return NextResponse.json({ error: "Failed to fetch candidates" }, { status: 500 });
   }
 }

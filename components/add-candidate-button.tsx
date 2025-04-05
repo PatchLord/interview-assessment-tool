@@ -1,13 +1,25 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import AddCandidateForm from "./add-candidate-form"
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Plus } from "lucide-react";
+import { useState } from "react";
+import AddCandidateForm from "./add-candidate-form";
 
-export default function AddCandidateButton() {
-  const [open, setOpen] = useState(false)
+interface AddCandidateButtonProps {
+  onSuccess?: () => void;
+}
+
+export default function AddCandidateButton({ onSuccess }: AddCandidateButtonProps) {
+  const [open, setOpen] = useState(false);
+
+  const handleSuccess = () => {
+    setOpen(false);
+    // Call the parent's onSuccess callback if provided
+    if (onSuccess) {
+      onSuccess();
+    }
+  };
 
   return (
     <>
@@ -15,16 +27,16 @@ export default function AddCandidateButton() {
         <Plus className="h-4 w-4 mr-2" />
         Add Candidate
       </Button>
-
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Add New Candidate</DialogTitle>
           </DialogHeader>
-          <AddCandidateForm onSuccess={() => setOpen(false)} />
+          <AddCandidateForm onSuccess={handleSuccess} />
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }
-

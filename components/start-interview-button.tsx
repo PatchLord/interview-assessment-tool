@@ -1,54 +1,63 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Play } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
-import { useToast } from "@/components/ui/use-toast"
-import { useEffect } from "react"
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
+import { Play } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface Candidate {
-  _id: string
-  name: string
-  email: string
+  _id: string;
+  name: string;
+  email: string;
 }
 
-export default function StartInterviewButton() {
-  const [open, setOpen] = useState(false)
-  const [candidates, setCandidates] = useState<Candidate[]>([])
-  const [selectedCandidate, setSelectedCandidate] = useState<string>("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [isFetching, setIsFetching] = useState(true)
-  const router = useRouter()
-  const { toast } = useToast()
+interface StartInterviewButtonProps {
+  onSuccess?: () => void;
+}
+
+export default function StartInterviewButton({ onSuccess }: StartInterviewButtonProps) {
+  const [open, setOpen] = useState(false);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [selectedCandidate, setSelectedCandidate] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
+  const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchCandidates = async () => {
       try {
-        const response = await fetch("/api/candidates")
+        const response = await fetch("/api/candidates");
         if (!response.ok) {
-          throw new Error("Failed to fetch candidates")
+          throw new Error("Failed to fetch candidates");
         }
-        const data = await response.json()
-        setCandidates(data)
+        const data = await response.json();
+        setCandidates(data);
       } catch (error) {
         toast({
           title: "Error",
           description: "Failed to fetch candidates",
           variant: "destructive",
-        })
+        });
       } finally {
-        setIsFetching(false)
+        setIsFetching(false);
       }
-    }
+    };
 
     if (open) {
-      fetchCandidates()
+      fetchCandidates();
     }
-  }, [open, toast])
+  }, [open, toast]);
 
   const handleStartInterview = async () => {
     if (!selectedCandidate) {
@@ -56,11 +65,11 @@ export default function StartInterviewButton() {
         title: "Error",
         description: "Please select a candidate",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
       const response = await fetch("/api/interviews", {
@@ -71,30 +80,35 @@ export default function StartInterviewButton() {
         body: JSON.stringify({
           candidateId: selectedCandidate,
         }),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error("Failed to create interview")
+        throw new Error("Failed to create interview");
       }
 
-      const data = await response.json()
+      const data = await response.json();
 
       toast({
         title: "Success",
         description: "Interview started successfully",
-      })
+      });
 
-      router.push(`/dashboard/interviews/${data._id}`)
+      // Call the onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
+
+      router.push(`/dashboard/interviews/${data._id}`);
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to start interview",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <>
@@ -103,7 +117,9 @@ export default function StartInterviewButton() {
         Start Interview
       </Button>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Start New Interview</DialogTitle>
@@ -120,7 +136,9 @@ export default function StartInterviewButton() {
                   </SelectTrigger>
                   <SelectContent>
                     {candidates.map((candidate) => (
-                      <SelectItem key={candidate._id} value={candidate._id}>
+                      <SelectItem
+                        key={candidate._id}
+                        value={candidate._id}>
                         {candidate.name} ({candidate.email})
                       </SelectItem>
                     ))}
@@ -130,10 +148,14 @@ export default function StartInterviewButton() {
             </div>
 
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleStartInterview} disabled={isLoading || !selectedCandidate}>
+              <Button
+                onClick={handleStartInterview}
+                disabled={isLoading || !selectedCandidate}>
                 {isLoading ? "Starting..." : "Start Interview"}
               </Button>
             </div>
@@ -141,6 +163,5 @@ export default function StartInterviewButton() {
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }
-

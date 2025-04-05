@@ -1,62 +1,59 @@
+"use client";
+
 import AddCandidateButton from "@/components/add-candidate-button";
 import CandidatesList from "@/components/candidates-list";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { authOptions } from "@/lib/auth";
-import Candidate from "@/lib/models/candidate";
-import Interview from "@/lib/models/interview";
-import connectToDatabase from "@/lib/mongodb";
-import { getServerSession } from "next-auth";
+import { useEffect, useState } from "react";
 
-async function getCandidates() {
-  await connectToDatabase();
-  const session = await getServerSession(authOptions);
+export default function CandidatesPage() {
+  const [candidates, setCandidates] = useState([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // If user is admin, get all candidates
-  if (session?.user?.role === "admin") {
-    const candidates = await Candidate.find().sort({ createdAt: -1 }).lean();
-    return JSON.parse(JSON.stringify(candidates));
-  }
+  useEffect(() => {
+    const fetchCandidates = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/candidates");
+        if (response.ok) {
+          const data = await response.json();
+          setCandidates(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch candidates:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  // For interviewers, only get candidates they've interviewed
-  if (session?.user?.id) {
-    // Find all interviews conducted by this interviewer
-    const interviews = await Interview.find({
-      interviewer: session.user.id,
-    })
-      .select("candidate")
-      .lean();
+    fetchCandidates();
+  }, [refreshTrigger]);
 
-    // Extract unique candidate IDs
-    const candidateIds = [...new Set(interviews.map((interview) => interview.candidate))];
-
-    // Get all these candidates
-    const candidates = await Candidate.find({
-      _id: { $in: candidateIds },
-    })
-      .sort({ createdAt: -1 })
-      .lean();
-
-    return JSON.parse(JSON.stringify(candidates));
-  }
-
-  return [];
-}
-
-export default async function CandidatesPage() {
-  const candidates = await getCandidates();
+  const handleRefresh = () => {
+    setRefreshTrigger((prev) => prev + 1);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Candidates</h1>
-        <AddCandidateButton />
+        <AddCandidateButton onSuccess={handleRefresh} />
       </div>
       <Card>
         <CardHeader>
           <CardTitle>{candidates.length > 0 ? "My Candidates" : "No Candidates Found"}</CardTitle>
         </CardHeader>
         <CardContent>
-          <CandidatesList candidates={candidates} />
+          {isLoading ? (
+            <div className="flex justify-center py-4">
+              <div className="animate-pulse text-gray-500">Loading candidates...</div>
+            </div>
+          ) : (
+            <CandidatesList
+              candidates={candidates}
+              refreshTrigger={refreshTrigger}
+            />
+          )}
         </CardContent>
       </Card>
     </div>
