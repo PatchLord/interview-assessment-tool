@@ -69,6 +69,13 @@ Question:
  * Template for evaluating code solutions
  */
 const CODE_EVALUATION_TEMPLATE = `
+
+    QUESTION IS -----> {question}
+
+    USER_ANSWER: {code}
+
+    SKILLS: {skills}
+
   now is the below prompt to evaluate the code against the interview question and return a structured JSON report with full accuracy.
   You are an ultra-precise AI code evaluator. Analyze the given code against the interview question and return a structured JSON report with full accuracy.
   **Objectives:**
@@ -97,25 +104,26 @@ const CODE_EVALUATION_TEMPLATE = `
      - Include before/after code snippets and performance comparison.
   **Return Output in This JSON Format:**
   
-    "summary": {
+    "summary": 
       "overall_assessment": "...",
       "correctness": ...,
       "code_quality": ...,
       "efficiency": "...",
       "edge_case_handling": ...,
       "overall_rating": ...
-    }
+    
   
    #### VERY_IMPORTANT_NOTE : you should give me answer in summarized one and its output is to be in 
    
-     "summary": {
+
+     "summary": 
        "overall_assessment": "...",
        "correctness": ...,
        "code_quality": ...,
        "efficiency": "...",
        "edge_case_handling": ...,
        "overall_rating": ...
-     }
+     
    
    this format it should be in this format not to be in different format
    ### NOTES : you should give every point in summarized one for the below point and just  give recommendation in the points one not to give me so good
@@ -153,8 +161,12 @@ Assessment:
 
 // Create prompt templates
 const questionGenerationPrompt = PromptTemplate.fromTemplate(QUESTION_TEMPLATE);
-const codeEvaluationPrompt = PromptTemplate.fromTemplate(CODE_EVALUATION_TEMPLATE);
-const finalAssessmentPrompt = PromptTemplate.fromTemplate(FINAL_ASSESSMENT_TEMPLATE);
+const codeEvaluationPrompt = PromptTemplate.fromTemplate(
+  CODE_EVALUATION_TEMPLATE
+);
+const finalAssessmentPrompt = PromptTemplate.fromTemplate(
+  FINAL_ASSESSMENT_TEMPLATE
+);
 
 // =========================================================================
 // Service Functions
@@ -204,7 +216,11 @@ export async function generateQuestion(
  * @param skills - Skills being assessed
  * @returns Detailed evaluation of the code
  */
-export async function evaluateCode(question: string, code: string, skills: string[]) {
+export async function evaluateCode(
+  question: string,
+  code: string,
+  skills: string[]
+) {
   try {
     validateEnvVars();
 
@@ -269,7 +285,11 @@ export async function generateFinalAssessment(
  * @param skills - Skills being assessed
  * @returns Streaming response of the evaluation
  */
-export async function streamEvaluation(question: string, code: string, skills: string[]) {
+export async function streamEvaluation(
+  question: string,
+  code: string,
+  skills: string[]
+) {
   try {
     validateEnvVars();
 

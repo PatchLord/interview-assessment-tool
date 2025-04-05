@@ -1,33 +1,36 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/components/ui/use-toast"
-import { Loader2 } from "lucide-react"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/components/ui/use-toast";
+import { Loader2, CheckCircle2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 
 interface Question {
-  skill: string
-  difficulty: string
-  question: string
-  candidateCode?: string
+  skill: string;
+  difficulty: string;
+  question: string;
+  candidateCode?: string;
   aiEvaluation?: {
-    codeQuality: number
-    efficiency: number
-    correctness: number
-    logicalThinking: number
-    technicalSkill: number
-    problemUnderstanding: number
-    feedback: string
-  }
+    summary?: {
+      overall_assessment: string;
+      correctness: number;
+      code_quality: number;
+      efficiency: string;
+      edge_case_handling: number;
+      overall_rating: number;
+    };
+    feedback?: string;
+  };
 }
 
 interface AIEvaluationProps {
-  question: Question
-  candidateSkills: string[]
-  questionIndex: number
-  onUpdateQuestion: (index: number, data: any) => void
+  question: Question;
+  candidateSkills: string[];
+  questionIndex: number;
+  onUpdateQuestion: (index: number, data: any) => void;
 }
 
 export default function AIEvaluation({
@@ -36,9 +39,8 @@ export default function AIEvaluation({
   questionIndex,
   onUpdateQuestion,
 }: AIEvaluationProps) {
-  const [evaluation, setEvaluation] = useState<string>(question.aiEvaluation?.feedback || "")
-  const [isEvaluating, setIsEvaluating] = useState<boolean>(false)
-  const { toast } = useToast()
+  const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
+  const { toast } = useToast();
 
   const handleGenerateEvaluation = async () => {
     if (!question.candidateCode) {
@@ -46,11 +48,11 @@ export default function AIEvaluation({
         title: "Error",
         description: "No code to evaluate",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsEvaluating(true)
+    setIsEvaluating(true);
 
     try {
       const response = await fetch("/api/ai/evaluate-code", {
@@ -63,47 +65,104 @@ export default function AIEvaluation({
           code: question.candidateCode,
           skills: [question.skill],
         }),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error("Failed to evaluate code")
+        throw new Error("Failed to evaluate code");
       }
 
-      const data = await response.json()
-      setEvaluation(data.evaluation)
+      const data = await response.json();
 
-      // Parse the evaluation to extract scores
-      // This is a simplified parsing logic - in a real app, you might want to use a more robust approach
-      const scores = {
-        codeQuality: extractScore(data.evaluation, "Code Quality"),
-        efficiency: extractScore(data.evaluation, "Efficiency"),
-        correctness: extractScore(data.evaluation, "Correctness"),
-        logicalThinking: extractScore(data.evaluation, "Logical Thinking"),
-        technicalSkill: extractScore(data.evaluation, "Technical Skill"),
-        problemUnderstanding: extractScore(data.evaluation, "Problem Understanding"),
-        feedback: data.evaluation,
+      // Check if we have parsed data from the API
+      if (data.parsedData && data.parsedData.summary) {
+        console.log("data", data);
+
+        // Update the question with the evaluation
+        onUpdateQuestion(questionIndex, {
+          aiEvaluation: {
+            summary: data.parsedData.summary,
+            feedback: data.evaluation,
+          },
+        });
+
+        toast({
+          title: "Success",
+          description: "Code evaluation completed",
+        });
+      } else {
+        // Try to parse the JSON evaluation from the raw response
+        try {
+          // If it's a string, try to parse it as JSON
+          if (typeof data.evaluation === "string") {
+            // Find the JSON object in the response
+            const jsonMatch = data.evaluation.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const evaluationData = JSON.parse(jsonMatch[0]);
+
+              // Update the question with the evaluation
+              onUpdateQuestion(questionIndex, {
+                aiEvaluation: {
+                  summary: evaluationData.summary,
+                  feedback: data.evaluation,
+                },
+              });
+
+              toast({
+                title: "Success",
+                description: "Code evaluation completed",
+              });
+              return;
+            }
+          }
+
+          // If we reach here, we couldn't parse the JSON
+          console.warn("Could not parse JSON from evaluation response");
+          toast({
+            title: "Warning",
+            description: "Evaluation completed but format was unexpected",
+          });
+
+          // Still save the raw evaluation as feedback
+          onUpdateQuestion(questionIndex, {
+            aiEvaluation: {
+              summary: data.parsedData.summary,
+              feedback: data.evaluation,
+            },
+          });
+        } catch (parseError) {
+          console.error("Error parsing evaluation:", parseError);
+          toast({
+            title: "Warning",
+            description: "Evaluation completed but format was unexpected",
+          });
+
+          // Still save the raw evaluation as feedback
+          onUpdateQuestion(questionIndex, {
+            aiEvaluation: {
+              summary: data.parsedData.summary,
+              feedback: data.evaluation,
+            },
+          });
+        }
       }
-
-      // Update the question with the evaluation
-      onUpdateQuestion(questionIndex, { aiEvaluation: scores })
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to evaluate code",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsEvaluating(false)
+      setIsEvaluating(false);
     }
-  }
+  };
 
-  // Helper function to extract scores from the evaluation text
-  const extractScore = (text: string, category: string): number => {
-    const regex = new RegExp(`${category}[^0-9]*([0-9]+)`, "i")
-    const match = text.match(regex)
-    return match ? Number.parseInt(match[1], 10) : 5 // Default to 5 if not found
-  }
-
+  const handleSaveCode = () => {
+    toast({
+      title: "Success",
+      description: "Code saved successfully",
+    });
+  };
+  // console.log('question.aiEvaluation.summary.overall_rating', question.aiEvaluation.summary.overall_rating)
   return (
     <div className="space-y-6">
       <Card>
@@ -111,67 +170,194 @@ export default function AIEvaluation({
           <CardTitle>AI Code Evaluation</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
-            <h3 className="font-medium mb-2">Question:</h3>
-            <div className="whitespace-pre-wrap mb-4">{question.question}</div>
+          <div className="flex space-x-2">
+            <Button
+              onClick={handleGenerateEvaluation}
+              disabled={isEvaluating || !question.candidateCode}
+              className="flex-1"
+            >
+              {isEvaluating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Evaluating...
+                </>
+              ) : (
+                "Generate AI Evaluation"
+              )}
+            </Button>
 
-            <h3 className="font-medium mb-2">Candidate's Code:</h3>
-            <pre className="bg-gray-100 dark:bg-gray-900 p-4 rounded-md overflow-x-auto">
-              <code>{question.candidateCode}</code>
-            </pre>
+            <Button
+              variant="outline"
+              onClick={handleSaveCode}
+              disabled={isEvaluating}
+            >
+              Save Code
+            </Button>
           </div>
 
-          <Button
-            onClick={handleGenerateEvaluation}
-            disabled={isEvaluating || !question.candidateCode}
-            className="w-full"
-          >
-            {isEvaluating ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Evaluating...
-              </>
-            ) : (
-              "Generate AI Evaluation"
-            )}
-          </Button>
+          {question.aiEvaluation?.summary && (
+            <div className="space-y-6 mt-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Overall Assessment</h3>
+                <p className="text-gray-700 dark:text-gray-300">
+                  {question.aiEvaluation.summary.overall_assessment}
+                </p>
+              </div>
 
-          {(evaluation || question.aiEvaluation?.feedback) && (
-            <div className="space-y-4">
-              <h3 className="font-medium">Evaluation:</h3>
-              <Textarea
-                value={evaluation || question.aiEvaluation?.feedback || ""}
-                readOnly
-                className="min-h-[300px]"
-              />
-
-              {question.aiEvaluation && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <ScoreCard title="Code Quality" score={question.aiEvaluation.codeQuality} />
-                  <ScoreCard title="Efficiency" score={question.aiEvaluation.efficiency} />
-                  <ScoreCard title="Correctness" score={question.aiEvaluation.correctness} />
-                  <ScoreCard title="Logical Thinking" score={question.aiEvaluation.logicalThinking} />
-                  <ScoreCard title="Technical Skill" score={question.aiEvaluation.technicalSkill} />
-                  <ScoreCard title="Problem Understanding" score={question.aiEvaluation.problemUnderstanding} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-md font-medium">Correctness</h3>
+                  <div className="flex items-center space-x-2">
+                    <Progress
+                      value={question.aiEvaluation.summary.correctness}
+                      className="h-2"
+                    />
+                    <span className="font-bold">
+                      {question.aiEvaluation.summary.correctness}%
+                    </span>
+                  </div>
                 </div>
-              )}
+
+                <div className="space-y-4">
+                  <h3 className="text-md font-medium">Code Quality</h3>
+                  <div className="flex items-center space-x-2">
+                    <Progress
+                      value={question.aiEvaluation.summary.code_quality}
+                      className="h-2"
+                    />
+                    <span className="font-bold">
+                      {question.aiEvaluation.summary.code_quality}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-md font-medium">Edge Case Handling</h3>
+                  <div className="flex items-center space-x-2">
+                    <Progress
+                      value={question.aiEvaluation.summary.edge_case_handling}
+                      className="h-2"
+                    />
+                    <span className="font-bold">
+                      {question.aiEvaluation.summary.edge_case_handling}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-md font-medium">Overall Rating</h3>
+                  <div className="flex items-center space-x-2">
+                    <Progress
+                      value={question.aiEvaluation.summary.overall_rating}
+                      className="h-2"
+                    />
+                    <span className="font-bold">
+                      {question.aiEvaluation.summary.overall_rating}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-md font-medium">Efficiency</h3>
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+                  <p className="text-gray-700 dark:text-gray-300">
+                    {question.aiEvaluation.summary.efficiency}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Final Score</h3>
+                <div className="flex items-center">
+                  <Badge variant="outline" className="text-lg px-3 py-1">
+                    <span className="font-bold mr-1">
+                      {question.aiEvaluation.summary.overall_rating}
+                    </span>
+                    <span className="text-gray-500">/100</span>
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!question.aiEvaluation?.summary && !isEvaluating && (
+            <div className="space-y-6 mt-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Overall Assessment</h3>
+                <p className="text-gray-400 dark:text-gray-500 italic">
+                  Generate an evaluation to see the assessment
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-md font-medium">Correctness</h3>
+                  <div className="flex items-center space-x-2">
+                    <Progress value={0} className="h-2" />
+                    <span className="font-bold text-gray-400">0%</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-md font-medium">Code Quality</h3>
+                  <div className="flex items-center space-x-2">
+                    <Progress value={0} className="h-2" />
+                    <span className="font-bold text-gray-400">0%</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-md font-medium">Edge Case Handling</h3>
+                  <div className="flex items-center space-x-2">
+                    <Progress value={0} className="h-2" />
+                    <span className="font-bold text-gray-400">0%</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-md font-medium">Overall Rating</h3>
+                  <div className="flex items-center space-x-2">
+                    <Progress value={0} className="h-2" />
+                    <span className="font-bold text-gray-400">0%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-md font-medium">Efficiency</h3>
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+                  <p className="text-gray-400 dark:text-gray-500 italic">
+                    Generate an evaluation to see efficiency analysis
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Final Score</h3>
+                <div className="flex items-center">
+                  <Badge variant="outline" className="text-lg px-3 py-1">
+                    <span className="font-bold mr-1 text-gray-400">0</span>
+                    <span className="text-gray-500">/100</span>
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isEvaluating && (
+            <div className="flex flex-col items-center justify-center p-8 space-y-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-center text-gray-500">
+                Analyzing code and generating evaluation...
+              </p>
+              <p className="text-center text-gray-500 text-sm">
+                This may take a minute or two
+              </p>
             </div>
           )}
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
-
-function ScoreCard({ title, score }: { title: string; score: number }) {
-  return (
-    <div className="p-3 border rounded-md">
-      <p className="text-sm font-medium">{title}</p>
-      <div className="flex items-center mt-1">
-        <div className="text-2xl font-bold">{score}</div>
-        <div className="text-sm text-gray-500 ml-1">/10</div>
-      </div>
-    </div>
-  )
-}
-
