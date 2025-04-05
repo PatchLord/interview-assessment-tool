@@ -20,7 +20,7 @@ async function getInterview(id: string) {
     const interview = await Interview.findById(id)
       .populate({
         path: "candidate",
-        options: { lean: true }, // This ensures all fields including selfAnalysis are included
+        options: { lean: true },
       })
       .populate("interviewer", "-password");
 
@@ -42,7 +42,7 @@ async function createNewInterview(candidateId: string, userId: string) {
     await connectToDatabase();
 
     // Verify candidate exists
-    const candidate = await Candidate.findById(candidateId);
+    const candidate = await Candidate.findById(candidateId).lean();
     if (!candidate) {
       throw new Error("Candidate not found");
     }

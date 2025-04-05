@@ -16,7 +16,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     // Connection is already established at application startup
     const interview = await Interview.findById(interviewId)
-      .populate("candidate")
+      .populate({
+        path: "candidate",
+        options: { lean: true },
+      })
       .populate("interviewer", "-password");
 
     if (!interview) {
@@ -55,15 +58,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const interviewId = (await params).id;
 
     // Connection is already established at application startup
-    const interview = await Interview.findById(interviewId);
+    const interview = await Interview.findById(interviewId)
+      .populate({
+        path: "candidate",
+        options: { lean: true },
+      })
+      .populate("interviewer", "-password");
     if (!interview) {
       return NextResponse.json({ error: "Interview not found" }, { status: 404 });
     }
-
-    // Debug logs
-    console.log("Session user ID:", session.user.id);
-    console.log("Interviewer ID:", interview.interviewer);
-    console.log("User role:", session.user.role);
 
     // Check if user is the interviewer or an admin
     const interviewerId = interview.interviewer.toString();
