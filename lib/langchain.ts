@@ -75,72 +75,65 @@ Question:
  * Template for evaluating code solutions
  */
 const CODE_EVALUATION_TEMPLATE = `
+You are an ultra-precise AI code evaluator. Your task is to analyze the given code against the interview question below and ALWAYS return a properly formatted JSON report that strictly follows the required structure.
 
-    QUESTION IS -----> {question}
+QUESTION: {question}
+CODE: {code}
+SKILLS: {skills}
 
-    USER_ANSWER: {code}
-
-    SKILLS: {skills}
-
-  now is the below prompt to evaluate the code against the interview question and return a structured JSON report with full accuracy.
-  You are an ultra-precise AI code evaluator. Analyze the given code against the interview question and return a structured JSON report with full accuracy.
-  **Objectives:**
+now use the below prompt to evaluate the code against the interview question and return a structured JSON report with full accuracy.
+**Objectives:**
   1. **Correctness (0–100%)**
-     - Does the code meet all functional requirements?
-     - Report percentage score and document any errors or missing parts.
-     - Include key test cases (input, expected, actual output).
+    - Does the code meet all functional requirements?
+    - Report percentage score and document any errors or missing parts.
+    - Include key test cases (input, expected, actual output).
   2. **Efficiency**
-     - Determine time and space complexity (Big O).
-     - Estimate performance vs. optimal solution as a percentage.
-     - Provide runtime estimation for realistic input sizes.
+    - Determine time and space complexity (Big O).
+    - Estimate performance vs. optimal solution as a percentage.
+    - Provide runtime estimation for realistic input sizes.
   3. **Code Quality (0–100%)**
-     - Score: readability, naming, structure, documentation, and best practices.
-     - Return individual and overall scores.
+    - Score: readability, naming, structure, documentation, and best practices.
+    - Return individual and overall scores.
   4. **Edge Case Handling (0–100%)**
-     - List all relevant edge cases.
-     - Rate how well each is handled.
-     - Provide an overall score.
+    - List all relevant edge cases.
+    - Rate how well each is handled.
+    - Provide an overall score.
   5. **Statistical Summary**
-     - Overall rating.
-     - Percentile ranking vs. average candidates.
-     - List improvement opportunities with impact estimates.
-     - Include a confidence interval.
+    - Overall rating.
+    - Percentile ranking vs. average candidates.
+    - List improvement opportunities with impact estimates.
+    - Include a confidence interval.
   6. **Improvement Recommendations**
-     - Prioritized list with estimated impact on score.
-     - Include before/after code snippets and performance comparison.
-  **Return Output in This JSON Format:**
-  
-    "summary": 
-      "overall_assessment": "...",
-      "correctness": ...,
-      "code_quality": ...,
-      "efficiency": "...",
-      "edge_case_handling": ...,
-      "overall_rating": ...
-    
-  
-   #### VERY_IMPORTANT_NOTE : you should give me answer in summarized one and its output is to be in 
-   
+    - Prioritized list with estimated impact on score.
+    - Include before/after code snippets and performance comparison.
 
-     "summary": 
-       "overall_assessment": "...",
-       "correctness": ...,
-       "code_quality": ...,
-       "efficiency": "...",
-       "edge_case_handling": ...,
-       "overall_rating": ...
-     
-   
-   this format it should be in this format not to be in different format
-   ### NOTES : you should give every point in summarized one for the below point and just  give recommendation in the points one not to give me so good
-   1. **Correctness (0–100%)**
-   2. **Efficiency**
-   3. **Code Quality (0–100%)**
-   4. **Edge Case Handling (0–100%)**
-   5. **Statistical Summary**
-   6. **Improvement Recommendations**
-   every points should have only 5 point which to be summarized of it
-  `;
+
+## CRITICAL OUTPUT REQUIREMENTS:
+ALWAYS structure your response as a valid JSON OBJECT with the EXACT format below:
+
+\`\`\`json
+
+  "summary": 
+    "overall_assessment": "Brief description of code quality and functionality",
+    "correctness": 85,
+    "code_quality": 75,
+    "efficiency": "O(n) time complexity, O(1) space complexity",
+    "edge_case_handling": 70,
+    "overall_rating": 80
+  
+
+\`\`\`
+
+IMPORTANT RULES:
+- ALL numeric values must be integers between 0-100
+- The "efficiency" field must be a string containing Big O notation
+- The "overall_assessment" must be a concise summary
+- DO NOT alter the JSON structure or add additional fields
+- DO NOT omit any fields - all fields shown in the example are required
+- Your entire response must be ONLY the valid JSON object, nothing else
+
+If you cannot evaluate the code for any reason, still return the JSON format with default values and explain the issue in the "overall_assessment" field.
+`;
 
 /**
  * Template for generating a final candidate assessment
@@ -177,12 +170,8 @@ give me only json object as final response
 
 // Create prompt templates
 const questionGenerationPrompt = PromptTemplate.fromTemplate(QUESTION_TEMPLATE);
-const codeEvaluationPrompt = PromptTemplate.fromTemplate(
-  CODE_EVALUATION_TEMPLATE
-);
-const finalAssessmentPrompt = PromptTemplate.fromTemplate(
-  FINAL_ASSESSMENT_TEMPLATE
-);
+const codeEvaluationPrompt = PromptTemplate.fromTemplate(CODE_EVALUATION_TEMPLATE);
+const finalAssessmentPrompt = PromptTemplate.fromTemplate(FINAL_ASSESSMENT_TEMPLATE);
 
 // =========================================================================
 // Service Functions
@@ -232,11 +221,7 @@ export async function generateQuestion(
  * @param skills - Skills being assessed
  * @returns Detailed evaluation of the code
  */
-export async function evaluateCode(
-  question: string,
-  code: string,
-  skills: string[]
-) {
+export async function evaluateCode(question: string, code: string, skills: string[]) {
   try {
     validateEnvVars();
 
@@ -301,11 +286,7 @@ export async function generateFinalAssessment(
  * @param skills - Skills being assessed
  * @returns Streaming response of the evaluation
  */
-export async function streamEvaluation(
-  question: string,
-  code: string,
-  skills: string[]
-) {
+export async function streamEvaluation(question: string, code: string, skills: string[]) {
   try {
     validateEnvVars();
 

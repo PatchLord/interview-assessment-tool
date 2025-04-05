@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
-import { Loader2, CheckCircle2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
 
 interface Question {
   skill: string;
@@ -43,14 +42,59 @@ export default function AIEvaluation({
   const { toast } = useToast();
 
   // Function to parse JSON from feedback string with markdown code blocks
-  const parseJsonFromFeedback = (feedback: string) => {
+  const parseJsonFromFeedback = (feedback: string | undefined) => {
     try {
+      // Make sure feedback is defined and is a string before using match()
+      if (!feedback || typeof feedback !== "string") {
+        return null;
+      }
+
       // Look for JSON content within markdown code blocks
       const jsonMatch = feedback.match(/```json\s*([\s\S]*?)\s*```/);
-      if (jsonMatch && jsonMatch[1]) {
-        // Parse the extracted JSON string
-        return JSON.parse(jsonMatch[1]);
+      if (jsonMatch?.[1]) {
+        // Clean the JSON string before parsing
+        const jsonString = jsonMatch[1].trim();
+
+        // Additional safety check - verify it starts with { and ends with }
+        if (!jsonString.startsWith("{") || !jsonString.endsWith("}")) {
+          console.warn("Malformed JSON detected:", jsonString);
+          return null;
+        }
+
+        try {
+          // Parse the extracted JSON string
+          return JSON.parse(jsonString);
+        } catch (parseError) {
+          console.error("JSON parse error:", parseError, "for string:", jsonString);
+
+          // Attempt to clean the string further and retry parsing
+          const cleanedJson = jsonString
+            .replace(/[\u0000-\u001F]+/g, "") // Remove control characters
+            .replace(/\n/g, " ") // Replace newlines with spaces
+            .replace(/\s+/g, " ") // Normalize whitespace
+            .replace(/,\s*}/g, "}") // Remove trailing commas
+            .replace(/,\s*]/g, "]"); // Remove trailing commas in arrays
+
+          try {
+            return JSON.parse(cleanedJson);
+          } catch (retryError) {
+            console.error("Failed to parse JSON even after cleaning:", retryError);
+            return null;
+          }
+        }
       }
+
+      // If no ```json block found, try to find a JSON object directly
+      const directJsonMatch = feedback.match(/\{[\s\S]*?\}/);
+      if (directJsonMatch?.[0]) {
+        try {
+          return JSON.parse(directJsonMatch[0]);
+        } catch (directParseError) {
+          console.error("Failed to parse direct JSON match:", directParseError);
+          return null;
+        }
+      }
+
       return null;
     } catch (error) {
       console.error("Error parsing JSON from feedback:", error);
@@ -90,9 +134,7 @@ export default function AIEvaluation({
       const data = await response.json();
 
       // Check if we have parsed data from the API
-      if (data.parsedData && data.parsedData.summary) {
-        console.log("data", data);
-
+      if (data.parsedData?.summary) {
         // Update the question with the evaluation
         onUpdateQuestion(questionIndex, {
           aiEvaluation: {
@@ -138,10 +180,9 @@ export default function AIEvaluation({
             description: "Evaluation completed but format was unexpected",
           });
 
-          // Still save the raw evaluation as feedback
+          // Still save the raw evaluation as feedback, but don't include summary if data.parsedData is undefined
           onUpdateQuestion(questionIndex, {
             aiEvaluation: {
-              summary: data.parsedData.summary,
               feedback: data.evaluation,
             },
           });
@@ -152,10 +193,9 @@ export default function AIEvaluation({
             description: "Evaluation completed but format was unexpected",
           });
 
-          // Still save the raw evaluation as feedback
+          // Still save the raw evaluation as feedback, but don't include summary if data.parsedData is undefined
           onUpdateQuestion(questionIndex, {
             aiEvaluation: {
-              summary: data.parsedData.summary,
               feedback: data.evaluation,
             },
           });
@@ -172,16 +212,8 @@ export default function AIEvaluation({
     }
   };
 
-  const handleSaveCode = () => {
-    toast({
-      title: "Success",
-      description: "Code saved successfully",
-    });
-  };
-
   const parsedData = parseJsonFromFeedback(question?.aiEvaluation?.feedback);
 
-  console.log("question.aiEvaluation.summary.overall_rating", question);
   return (
     <div className="space-y-6">
       <Card>
@@ -193,8 +225,7 @@ export default function AIEvaluation({
             <Button
               onClick={handleGenerateEvaluation}
               disabled={isEvaluating || !question.candidateCode}
-              className="flex-1"
-            >
+              className="flex-1">
               {isEvaluating ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -205,26 +236,6 @@ export default function AIEvaluation({
               )}
             </Button>
           </div>
-
-          {/* {question.aiEvaluation?.feedback &&
-            !question.aiEvaluation?.summary && (
-              <div className="space-y-4 mt-6">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium">Process Feedback</h3>
-                  <Button
-                    onClick={handleProcessFeedback}
-                    className="flex items-center space-x-2"
-                  >
-                    <span>Extract JSON Data</span>
-                  </Button>
-                </div>
-                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-md">
-                  <pre className="whitespace-pre-wrap text-sm">
-                    {question.aiEvaluation.feedback}
-                  </pre>
-                </div>
-              </div>
-            )} */}
 
           {parsedData?.summary && (
             <div className="space-y-6 mt-6">
@@ -243,9 +254,7 @@ export default function AIEvaluation({
                       value={parsedData?.summary.correctness}
                       className="h-2"
                     />
-                    <span className="font-bold">
-                      {parsedData?.summary.correctness}%
-                    </span>
+                    <span className="font-bold">{parsedData?.summary.correctness}%</span>
                   </div>
                 </div>
 
@@ -256,9 +265,7 @@ export default function AIEvaluation({
                       value={parsedData?.summary.code_quality}
                       className="h-2"
                     />
-                    <span className="font-bold">
-                      {parsedData?.summary.code_quality}%
-                    </span>
+                    <span className="font-bold">{parsedData?.summary.code_quality}%</span>
                   </div>
                 </div>
 
@@ -269,9 +276,7 @@ export default function AIEvaluation({
                       value={parsedData?.summary.edge_case_handling}
                       className="h-2"
                     />
-                    <span className="font-bold">
-                      {parsedData?.summary.edge_case_handling}%
-                    </span>
+                    <span className="font-bold">{parsedData?.summary.edge_case_handling}%</span>
                   </div>
                 </div>
 
@@ -282,9 +287,7 @@ export default function AIEvaluation({
                       value={parsedData?.summary.overall_rating}
                       className="h-2"
                     />
-                    <span className="font-bold">
-                      {parsedData?.summary.overall_rating}%
-                    </span>
+                    <span className="font-bold">{parsedData?.summary.overall_rating}%</span>
                   </div>
                 </div>
               </div>
@@ -297,74 +300,8 @@ export default function AIEvaluation({
                   </p>
                 </div>
               </div>
-
-              {/* <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Final Score</h3>
-                <div className="flex items-center">
-                  <Badge variant="outline" className="text-lg px-3 py-1">
-                    <span className="font-bold mr-1">
-                      {parsedData?.summary.overall_rating}
-                    </span>
-                    <span className="text-gray-500">/100</span>
-                  </Badge>
-                </div>
-              </div> */}
             </div>
           )}
-
-          {/* {!question.aiEvaluation?.summary && !isEvaluating && (
-            <div className="space-y-6 mt-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Overall Assessment</h3>
-                <p className="text-gray-400 dark:text-gray-500 italic">
-                  Generate an evaluation to see the assessment
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="text-md font-medium">Correctness</h3>
-                  <div className="flex items-center space-x-2">
-                    <Progress value={0} className="h-2" />
-                    <span className="font-bold text-gray-400">0%</span>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-md font-medium">Code Quality</h3>
-                  <div className="flex items-center space-x-2">
-                    <Progress value={0} className="h-2" />
-                    <span className="font-bold text-gray-400">0%</span>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-md font-medium">Edge Case Handling</h3>
-                  <div className="flex items-center space-x-2">
-                    <Progress value={0} className="h-2" />
-                    <span className="font-bold text-gray-400">0%</span>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-md font-medium">Overall Rating</h3>
-                  <div className="flex items-center space-x-2">
-                    <Progress value={0} className="h-2" />
-                    <span className="font-bold text-gray-400">0%</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-md font-medium">Efficiency</h3>
-                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
-                  <p className="text-gray-400 dark:text-gray-500 italic">
-                    Generate an evaluation to see efficiency analysis
-                  </p>
-                </div>
-              </div>
-            </div>
-          )} */}
 
           {isEvaluating && (
             <div className="flex flex-col items-center justify-center p-8 space-y-4">
@@ -372,9 +309,7 @@ export default function AIEvaluation({
               <p className="text-center text-gray-500">
                 Analyzing code and generating evaluation...
               </p>
-              <p className="text-center text-gray-500 text-sm">
-                This may take a minute or two
-              </p>
+              <p className="text-center text-gray-500 text-sm">This may take a minute or two</p>
             </div>
           )}
         </CardContent>
