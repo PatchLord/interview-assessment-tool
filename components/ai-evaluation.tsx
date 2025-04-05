@@ -42,6 +42,22 @@ export default function AIEvaluation({
   const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
   const { toast } = useToast();
 
+  // Function to parse JSON from feedback string with markdown code blocks
+  const parseJsonFromFeedback = (feedback: string) => {
+    try {
+      // Look for JSON content within markdown code blocks
+      const jsonMatch = feedback.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonMatch && jsonMatch[1]) {
+        // Parse the extracted JSON string
+        return JSON.parse(jsonMatch[1]);
+      }
+      return null;
+    } catch (error) {
+      console.error("Error parsing JSON from feedback:", error);
+      return null;
+    }
+  };
+
   const handleGenerateEvaluation = async () => {
     if (!question.candidateCode) {
       toast({
@@ -162,7 +178,10 @@ export default function AIEvaluation({
       description: "Code saved successfully",
     });
   };
-  // console.log('question.aiEvaluation.summary.overall_rating', question.aiEvaluation.summary.overall_rating)
+
+  const parsedData = parseJsonFromFeedback(question?.aiEvaluation?.feedback);
+
+  console.log("question.aiEvaluation.summary.overall_rating", question);
   return (
     <div className="space-y-6">
       <Card>
@@ -185,22 +204,34 @@ export default function AIEvaluation({
                 "Generate AI Evaluation"
               )}
             </Button>
-
-            <Button
-              variant="outline"
-              onClick={handleSaveCode}
-              disabled={isEvaluating}
-            >
-              Save Code
-            </Button>
           </div>
 
-          {question.aiEvaluation?.summary && (
+          {/* {question.aiEvaluation?.feedback &&
+            !question.aiEvaluation?.summary && (
+              <div className="space-y-4 mt-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium">Process Feedback</h3>
+                  <Button
+                    onClick={handleProcessFeedback}
+                    className="flex items-center space-x-2"
+                  >
+                    <span>Extract JSON Data</span>
+                  </Button>
+                </div>
+                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-md">
+                  <pre className="whitespace-pre-wrap text-sm">
+                    {question.aiEvaluation.feedback}
+                  </pre>
+                </div>
+              </div>
+            )} */}
+
+          {parsedData?.summary && (
             <div className="space-y-6 mt-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Overall Assessment</h3>
                 <p className="text-gray-700 dark:text-gray-300">
-                  {question.aiEvaluation.summary.overall_assessment}
+                  {parsedData?.summary.overall_assessment}
                 </p>
               </div>
 
@@ -209,11 +240,11 @@ export default function AIEvaluation({
                   <h3 className="text-md font-medium">Correctness</h3>
                   <div className="flex items-center space-x-2">
                     <Progress
-                      value={question.aiEvaluation.summary.correctness}
+                      value={parsedData?.summary.correctness}
                       className="h-2"
                     />
                     <span className="font-bold">
-                      {question.aiEvaluation.summary.correctness}%
+                      {parsedData?.summary.correctness}%
                     </span>
                   </div>
                 </div>
@@ -222,11 +253,11 @@ export default function AIEvaluation({
                   <h3 className="text-md font-medium">Code Quality</h3>
                   <div className="flex items-center space-x-2">
                     <Progress
-                      value={question.aiEvaluation.summary.code_quality}
+                      value={parsedData?.summary.code_quality}
                       className="h-2"
                     />
                     <span className="font-bold">
-                      {question.aiEvaluation.summary.code_quality}%
+                      {parsedData?.summary.code_quality}%
                     </span>
                   </div>
                 </div>
@@ -235,11 +266,11 @@ export default function AIEvaluation({
                   <h3 className="text-md font-medium">Edge Case Handling</h3>
                   <div className="flex items-center space-x-2">
                     <Progress
-                      value={question.aiEvaluation.summary.edge_case_handling}
+                      value={parsedData?.summary.edge_case_handling}
                       className="h-2"
                     />
                     <span className="font-bold">
-                      {question.aiEvaluation.summary.edge_case_handling}%
+                      {parsedData?.summary.edge_case_handling}%
                     </span>
                   </div>
                 </div>
@@ -248,11 +279,11 @@ export default function AIEvaluation({
                   <h3 className="text-md font-medium">Overall Rating</h3>
                   <div className="flex items-center space-x-2">
                     <Progress
-                      value={question.aiEvaluation.summary.overall_rating}
+                      value={parsedData?.summary.overall_rating}
                       className="h-2"
                     />
                     <span className="font-bold">
-                      {question.aiEvaluation.summary.overall_rating}%
+                      {parsedData?.summary.overall_rating}%
                     </span>
                   </div>
                 </div>
@@ -262,26 +293,26 @@ export default function AIEvaluation({
                 <h3 className="text-md font-medium">Efficiency</h3>
                 <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
                   <p className="text-gray-700 dark:text-gray-300">
-                    {question.aiEvaluation.summary.efficiency}
+                    {parsedData?.summary.efficiency}
                   </p>
                 </div>
               </div>
 
-              <div className="flex justify-between items-center">
+              {/* <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Final Score</h3>
                 <div className="flex items-center">
                   <Badge variant="outline" className="text-lg px-3 py-1">
                     <span className="font-bold mr-1">
-                      {question.aiEvaluation.summary.overall_rating}
+                      {parsedData?.summary.overall_rating}
                     </span>
                     <span className="text-gray-500">/100</span>
                   </Badge>
                 </div>
-              </div>
+              </div> */}
             </div>
           )}
 
-          {!question.aiEvaluation?.summary && !isEvaluating && (
+          {/* {!question.aiEvaluation?.summary && !isEvaluating && (
             <div className="space-y-6 mt-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Overall Assessment</h3>
@@ -332,18 +363,8 @@ export default function AIEvaluation({
                   </p>
                 </div>
               </div>
-
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Final Score</h3>
-                <div className="flex items-center">
-                  <Badge variant="outline" className="text-lg px-3 py-1">
-                    <span className="font-bold mr-1 text-gray-400">0</span>
-                    <span className="text-gray-500">/100</span>
-                  </Badge>
-                </div>
-              </div>
             </div>
-          )}
+          )} */}
 
           {isEvaluating && (
             <div className="flex flex-col items-center justify-center p-8 space-y-4">
