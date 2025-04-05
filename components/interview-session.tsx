@@ -3,8 +3,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -13,8 +11,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import AIEvaluation from "./ai-evaluation";
 import CodeEditor from "./code-editor";
 import FinalAssessment from "./final-assessment";
@@ -75,8 +77,7 @@ export default function InterviewSession({
   const [interview, setInterview] = useState<Interview>(initialInterview);
   const [activeQuestionIndex, setActiveQuestionIndex] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<string>("question-generator");
-  const [completeInterviewClicked, setCompleteInterviewClicked] =
-    useState<boolean>(false);
+  const [completeInterviewClicked, setCompleteInterviewClicked] = useState<boolean>(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState<boolean>(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -185,8 +186,7 @@ export default function InterviewSession({
         if (response.status === 401) {
           toast({
             title: "Authentication Error",
-            description:
-              "Your session may have expired. Please refresh the page and try again.",
+            description: "Your session may have expired. Please refresh the page and try again.",
             variant: "destructive",
           });
           return;
@@ -213,8 +213,7 @@ export default function InterviewSession({
       console.error("Complete interview error:", error);
       toast({
         title: "Error",
-        description:
-          typeof error === "string" ? error : "Failed to complete interview",
+        description: typeof error === "string" ? error : "Failed to complete interview",
         variant: "destructive",
       });
       throw error;
@@ -227,16 +226,10 @@ export default function InterviewSession({
         <div>
           <h1 className="text-3xl font-bold">Interview Session</h1>
           <div className="flex items-center space-x-2 mt-2">
-            <Badge
-              variant={
-                interview.status === "completed" ? "success" : "secondary"
-              }
-            >
+            <Badge variant={interview.status === "completed" ? "success" : "secondary"}>
               {interview.status === "completed" ? "Completed" : "In Progress"}
             </Badge>
-            <span className="text-gray-500">
-              {new Date(interview.date).toLocaleDateString()}
-            </span>
+            <span className="text-gray-500">{new Date(interview.date).toLocaleDateString()}</span>
           </div>
         </div>
       </div>
@@ -275,9 +268,7 @@ export default function InterviewSession({
                     </Badge>
                   </>
                 ) : (
-                  <span className="text-gray-500">
-                    No self analysis data available
-                  </span>
+                  <span className="text-gray-500">No self analysis data available</span>
                 )}
               </div>
             </div>
@@ -285,69 +276,166 @@ export default function InterviewSession({
               <p className="text-sm font-medium">Skills</p>
               <div className="flex flex-wrap gap-2 mt-1">
                 {interview.candidate.skills?.map((skill) => (
-                  <Badge key={skill} variant="outline">
+                  <Badge
+                    key={skill}
+                    variant="outline">
                     {skill}
                   </Badge>
-                )) || (
-                  <span className="text-gray-500">No skills specified</span>
-                )}
+                )) || <span className="text-gray-500">No skills specified</span>}
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-4">
           <TabsTrigger
             value="question-generator"
-            disabled={
-              interview.status === "completed" || completeInterviewClicked
-            }
-          >
+            disabled={!interview.questions.length && interview.status === "completed"}>
             Question Generator
           </TabsTrigger>
           <TabsTrigger
             value="code-editor"
-            disabled={
-              interview.questions.length === 0 ||
-              interview.status === "completed" ||
-              completeInterviewClicked
-            }
-          >
+            disabled={interview.questions.length === 0}>
             Code Editor
           </TabsTrigger>
           <TabsTrigger
             value="ai-evaluation"
             disabled={
               interview.questions.length === 0 ||
-              !interview.questions[activeQuestionIndex]?.candidateCode ||
-              interview.status === "completed" ||
-              completeInterviewClicked
-            }
-          >
+              !interview.questions[activeQuestionIndex]?.candidateCode
+            }>
             AI Evaluation
           </TabsTrigger>
-          {(interview.status === "completed" || completeInterviewClicked) && (
-            <TabsTrigger value="final-assessment">Final Assessment</TabsTrigger>
-          )}
+          <TabsTrigger value="final-assessment">Final Assessment</TabsTrigger>
           {!completeInterviewClicked && interview.status !== "completed" && (
             <Button
               onClick={() => setConfirmDialogOpen(true)}
               variant="outline"
-              className="h-9 rounded-sm px-4"
-            >
+              className="h-9 rounded-sm px-4">
               Complete Interview
             </Button>
           )}
         </TabsList>
 
         <TabsContent value="question-generator">
-          <QuestionGenerator
-            candidateSkills={interview.candidate.skills}
-            interviewLevel={interview.candidate.interviewLevel}
-            onAddQuestion={handleAddQuestion}
-          />
+          {interview.status === "completed" ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Interview Questions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {interview.questions.length > 0 ? (
+                  <div className="space-y-6">
+                    {interview.questions.map((q, index) => (
+                      <div
+                        key={index}
+                        className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <Badge>{q.skill}</Badge>
+                          <Badge variant="outline">{q.difficulty}</Badge>
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            Question {index + 1}
+                          </span>
+                        </div>
+
+                        <div className="prose prose-slate dark:prose-invert max-w-none">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              p: ({ node, ...props }) => (
+                                <p
+                                  className="mb-4"
+                                  {...props}
+                                />
+                              ),
+                              h1: ({ node, ...props }) => (
+                                <h1
+                                  className="text-2xl font-bold mb-4"
+                                  {...props}
+                                />
+                              ),
+                              h2: ({ node, ...props }) => (
+                                <h2
+                                  className="text-xl font-bold mb-3"
+                                  {...props}
+                                />
+                              ),
+                              h3: ({ node, ...props }) => (
+                                <h3
+                                  className="text-lg font-bold mb-2"
+                                  {...props}
+                                />
+                              ),
+                              pre: ({ node, ...props }) => (
+                                <pre
+                                  className="bg-gray-800 text-white p-4 rounded-md my-4 overflow-auto"
+                                  {...props}
+                                />
+                              ),
+                              code: ({
+                                node,
+                                inline,
+                                ...props
+                              }: {
+                                node?: any;
+                                inline?: boolean;
+                                [key: string]: any;
+                              }) =>
+                                inline ? (
+                                  <code
+                                    className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded"
+                                    {...props}
+                                  />
+                                ) : (
+                                  <code {...props} />
+                                ),
+                              ul: ({ node, ...props }) => (
+                                <ul
+                                  className="list-disc pl-6 mb-4"
+                                  {...props}
+                                />
+                              ),
+                              ol: ({ node, ...props }) => (
+                                <ol
+                                  className="list-decimal pl-6 mb-4"
+                                  {...props}
+                                />
+                              ),
+                              li: ({ node, ...props }) => (
+                                <li
+                                  className="mb-1"
+                                  {...props}
+                                />
+                              ),
+                            }}>
+                            {q.question}
+                          </ReactMarkdown>
+                        </div>
+
+                        {index < interview.questions.length - 1 && (
+                          <div className="h-px w-full bg-gray-200 dark:bg-gray-800 my-4" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-gray-500">
+                    No questions were added to this interview.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <QuestionGenerator
+              candidateSkills={interview.candidate.skills}
+              interviewLevel={interview.candidate.interviewLevel}
+              onAddQuestion={handleAddQuestion}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="code-editor">
@@ -357,6 +445,7 @@ export default function InterviewSession({
               activeQuestionIndex={activeQuestionIndex}
               setActiveQuestionIndex={setActiveQuestionIndex}
               onUpdateQuestion={handleUpdateQuestion}
+              readOnly={interview.status === "completed"}
             />
           ) : (
             <Card>
@@ -398,21 +487,21 @@ export default function InterviewSession({
       </Tabs>
 
       {/* Confirmation Dialog */}
-      <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+      <Dialog
+        open={confirmDialogOpen}
+        onOpenChange={setConfirmDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Complete Interview</DialogTitle>
             <DialogDescription>
-              Are you sure you want to complete this interview? This will take
-              you to the final assessment page where you can review and submit
-              the final evaluation.
+              Are you sure you want to complete this interview? This will take you to the final
+              assessment page where you can review and submit the final evaluation.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setConfirmDialogOpen(false)}
-            >
+              onClick={() => setConfirmDialogOpen(false)}>
               Cancel
             </Button>
             <Button
@@ -420,8 +509,7 @@ export default function InterviewSession({
                 setConfirmDialogOpen(false);
                 setCompleteInterviewClicked(true);
                 setActiveTab("final-assessment");
-              }}
-            >
+              }}>
               Confirm
             </Button>
           </DialogFooter>
