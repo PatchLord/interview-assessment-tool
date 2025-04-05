@@ -18,7 +18,11 @@ import remarkGfm from "remark-gfm";
 interface QuestionGeneratorProps {
   candidateSkills: string[];
   interviewLevel: string;
-  onAddQuestion: (question: { skill: string; difficulty: string; question: string }) => void;
+  onAddQuestion: (question: {
+    skill: string;
+    difficulty: string;
+    question: string;
+  }) => void;
 }
 
 export default function QuestionGenerator({
@@ -65,7 +69,9 @@ export default function QuestionGenerator({
 
       const data = await response.json();
       // Extract question content, removing surrounding backticks if present
-      const questionText = data.question.replace(/^```(markdown)?|```$/g, "").trim();
+      const questionText = data.question
+        .replace(/^```(markdown)?|```$/g, "")
+        .trim();
       setGeneratedQuestion(questionText);
     } catch (error) {
       toast({
@@ -110,17 +116,13 @@ export default function QuestionGenerator({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="skill">Select Skill</Label>
-              <Select
-                value={selectedSkill}
-                onValueChange={setSelectedSkill}>
+              <Select value={selectedSkill} onValueChange={setSelectedSkill}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a skill" />
                 </SelectTrigger>
                 <SelectContent>
                   {candidateSkills?.map((skill) => (
-                    <SelectItem
-                      key={skill}
-                      value={skill}>
+                    <SelectItem key={skill} value={skill}>
                       {skill}
                     </SelectItem>
                   ))}
@@ -132,7 +134,8 @@ export default function QuestionGenerator({
               <Label htmlFor="difficulty">Select Difficulty</Label>
               <Select
                 value={selectedDifficulty}
-                onValueChange={setSelectedDifficulty}>
+                onValueChange={setSelectedDifficulty}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select difficulty" />
                 </SelectTrigger>
@@ -148,7 +151,8 @@ export default function QuestionGenerator({
           <Button
             onClick={handleGenerateQuestion}
             disabled={isGenerating || !selectedSkill || !selectedDifficulty}
-            className="w-full">
+            className="w-full"
+          >
             {isGenerating ? "Generating..." : "Generate Question"}
           </Button>
         </CardContent>
@@ -165,29 +169,15 @@ export default function QuestionGenerator({
                 remarkPlugins={[remarkGfm]}
                 components={{
                   // This allows the className prop to work
-                  p: ({ node, ...props }) => (
-                    <p
-                      className="mb-4"
-                      {...props}
-                    />
-                  ),
+                  p: ({ node, ...props }) => <p className="mb-4" {...props} />,
                   h1: ({ node, ...props }) => (
-                    <h1
-                      className="text-2xl font-bold mb-4"
-                      {...props}
-                    />
+                    <h1 className="text-2xl font-bold mb-4" {...props} />
                   ),
                   h2: ({ node, ...props }) => (
-                    <h2
-                      className="text-xl font-bold mb-3"
-                      {...props}
-                    />
+                    <h2 className="text-xl font-bold mb-3" {...props} />
                   ),
                   h3: ({ node, ...props }) => (
-                    <h3
-                      className="text-lg font-bold mb-2"
-                      {...props}
-                    />
+                    <h3 className="text-lg font-bold mb-2" {...props} />
                   ),
                   pre: ({ node, ...props }) => (
                     <pre
@@ -213,31 +203,21 @@ export default function QuestionGenerator({
                       <code {...props} />
                     ),
                   ul: ({ node, ...props }) => (
-                    <ul
-                      className="list-disc pl-6 mb-4"
-                      {...props}
-                    />
+                    <ul className="list-disc pl-6 mb-4" {...props} />
                   ),
                   ol: ({ node, ...props }) => (
-                    <ol
-                      className="list-decimal pl-6 mb-4"
-                      {...props}
-                    />
+                    <ol className="list-decimal pl-6 mb-4" {...props} />
                   ),
                   li: ({ node, ...props }) => (
-                    <li
-                      className="mb-1"
-                      {...props}
-                    />
+                    <li className="mb-1" {...props} />
                   ),
-                }}>
+                }}
+              >
                 {generatedQuestion}
               </ReactMarkdown>
             </div>
 
-            <Button
-              onClick={handleAddQuestion}
-              className="w-full">
+            <Button onClick={handleAddQuestion} className="w-full">
               Add Question to Interview
             </Button>
           </CardContent>

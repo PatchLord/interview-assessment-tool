@@ -37,6 +37,7 @@ interface AIEvaluationProps {
   candidateSkills: string[];
   questionIndex: number;
   onUpdateQuestion: (index: number, data: any) => void;
+  interviewLevel: string;
 }
 
 export default function AIEvaluation({
@@ -44,6 +45,7 @@ export default function AIEvaluation({
   candidateSkills,
   questionIndex,
   onUpdateQuestion,
+  interviewLevel,
 }: AIEvaluationProps) {
   const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
   const [isGeneratingFollowUp, setIsGeneratingFollowUp] =

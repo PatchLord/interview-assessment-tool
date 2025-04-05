@@ -99,11 +99,17 @@ export default function InterviewSession({
     };
 
     // Add event listener
-    window.addEventListener('navigateToTab', handleTabNavigation as EventListener);
+    window.addEventListener(
+      "navigateToTab",
+      handleTabNavigation as EventListener
+    );
 
     // Clean up
     return () => {
-      window.removeEventListener('navigateToTab', handleTabNavigation as EventListener);
+      window.removeEventListener(
+        "navigateToTab",
+        handleTabNavigation as EventListener
+      );
     };
   }, []);
 
@@ -395,6 +401,7 @@ export default function InterviewSession({
               candidateSkills={interview.candidate.skills}
               questionIndex={activeQuestionIndex}
               onUpdateQuestion={handleUpdateQuestion}
+              interviewLevel={interview.candidate.interviewLevel}
             />
           ) : (
             <Card>
