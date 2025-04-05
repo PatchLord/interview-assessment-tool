@@ -1,36 +1,68 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { authOptions } from "@/lib/auth";
 import Candidate from "@/lib/models/candidate";
 import Interview from "@/lib/models/interview";
 import connectToDatabase from "@/lib/mongodb";
 import { ExternalLink, FileText } from "lucide-react";
+import { getServerSession } from "next-auth";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 async function getCandidate(id: string) {
   await connectToDatabase();
-
   const candidate = await Candidate.findById(id).lean();
-
   if (!candidate) {
     return null;
   }
-
   return JSON.parse(JSON.stringify(candidate));
 }
 
-async function getCandidateInterviews(candidateId: string) {
+async function getCandidateInterviews(candidateId: string, userId?: string, isAdmin?: boolean) {
   await connectToDatabase();
 
-  const interviews = await Interview.find({ candidate: candidateId })
-    .populate("interviewer", "-password")
-    .sort({ date: -1 });
+  // If user is admin, get all interviews for this candidate
+  if (isAdmin) {
+    const interviews = await Interview.find({ candidate: candidateId })
+      .populate("interviewer", "-password")
+      .sort({ date: -1 });
+    return JSON.parse(JSON.stringify(interviews));
+  }
 
-  return JSON.parse(JSON.stringify(interviews));
+  // For interviewers, only get interviews they conducted
+  if (userId) {
+    const interviews = await Interview.find({
+      candidate: candidateId,
+      interviewer: userId,
+    })
+      .populate("interviewer", "-password")
+      .sort({ date: -1 });
+    return JSON.parse(JSON.stringify(interviews));
+  }
+
+  return [];
+}
+
+// Check if interviewer has access to this candidate
+async function hasAccessToCandidate(candidateId: string, userId: string) {
+  await connectToDatabase();
+
+  const interview = await Interview.findOne({
+    candidate: candidateId,
+    interviewer: userId,
+  });
+
+  return interview !== null;
 }
 
 export default async function CandidateDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    return redirect("/login");
+  }
+
   const candidateId = (await params).id;
   const candidate = await getCandidate(candidateId);
 
@@ -38,7 +70,27 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
     notFound();
   }
 
-  const interviews = await getCandidateInterviews(candidateId);
+  const isAdmin = session.user.role === "admin";
+
+  // If not admin, check if interviewer has access to this candidate
+  if (!isAdmin) {
+    const hasAccess = await hasAccessToCandidate(candidateId, session.user.id);
+    if (!hasAccess) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[70vh]">
+          <h1 className="text-3xl font-bold mb-4">Access Denied</h1>
+          <p className="text-gray-600 mb-6">You don't have permission to view this candidate.</p>
+          <Link
+            href="/dashboard/candidates"
+            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90">
+            Return to Candidates
+          </Link>
+        </div>
+      );
+    }
+  }
+
+  const interviews = await getCandidateInterviews(candidateId, session.user.id, isAdmin);
 
   return (
     <div className="space-y-6">
@@ -132,7 +184,6 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                             Interviewer: {interview.interviewer?.name || "N/A"}
                           </p>
                         </div>
-
                         <div className="mt-4 md:mt-0">
                           <div className="flex items-center space-x-2">
                             <Badge
@@ -145,7 +196,6 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                               </Badge>
                             )}
                           </div>
-
                           <Link href={`/dashboard/interviews/${interview._id}`}>
                             <Button
                               variant="outline"
@@ -175,7 +225,6 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
               <Link href={`/dashboard/interviews/new?candidateId=${candidate._id}`}>
                 <Button className="w-full">Start New Interview</Button>
               </Link>
-
               {candidate.resumeUrl && (
                 <a
                   href={candidate.resumeUrl}

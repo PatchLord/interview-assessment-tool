@@ -1,14 +1,45 @@
 import AddCandidateButton from "@/components/add-candidate-button";
 import CandidatesList from "@/components/candidates-list";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { authOptions } from "@/lib/auth";
 import Candidate from "@/lib/models/candidate";
+import Interview from "@/lib/models/interview";
 import connectToDatabase from "@/lib/mongodb";
+import { getServerSession } from "next-auth";
 
 async function getCandidates() {
   await connectToDatabase();
-  const candidates = await Candidate.find().sort({ createdAt: -1 }).lean();
-  // Properly serialize MongoDB objects to plain JavaScript objects
-  return JSON.parse(JSON.stringify(candidates));
+  const session = await getServerSession(authOptions);
+
+  // If user is admin, get all candidates
+  if (session?.user?.role === "admin") {
+    const candidates = await Candidate.find().sort({ createdAt: -1 }).lean();
+    return JSON.parse(JSON.stringify(candidates));
+  }
+
+  // For interviewers, only get candidates they've interviewed
+  if (session?.user?.id) {
+    // Find all interviews conducted by this interviewer
+    const interviews = await Interview.find({
+      interviewer: session.user.id,
+    })
+      .select("candidate")
+      .lean();
+
+    // Extract unique candidate IDs
+    const candidateIds = [...new Set(interviews.map((interview) => interview.candidate))];
+
+    // Get all these candidates
+    const candidates = await Candidate.find({
+      _id: { $in: candidateIds },
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return JSON.parse(JSON.stringify(candidates));
+  }
+
+  return [];
 }
 
 export default async function CandidatesPage() {
@@ -22,7 +53,7 @@ export default async function CandidatesPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>All Candidates</CardTitle>
+          <CardTitle>{candidates.length > 0 ? "My Candidates" : "No Candidates Found"}</CardTitle>
         </CardHeader>
         <CardContent>
           <CandidatesList candidates={candidates} />
