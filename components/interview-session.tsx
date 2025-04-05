@@ -90,6 +90,24 @@ export default function InterviewSession({
     }
   }, [interview.status]);
 
+  // Add event listener for tab navigation from child components
+  useEffect(() => {
+    const handleTabNavigation = (event: CustomEvent) => {
+      const { tab } = event.detail;
+      if (tab) {
+        setActiveTab(tab);
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('navigateToTab', handleTabNavigation as EventListener);
+
+    // Clean up
+    return () => {
+      window.removeEventListener('navigateToTab', handleTabNavigation as EventListener);
+    };
+  }, []);
+
   const handleAddQuestion = async (question: {
     skill: string;
     difficulty: string;
